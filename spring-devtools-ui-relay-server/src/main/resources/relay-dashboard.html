@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Falkenr Hosted Dashboard</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3efe7;
+      --panel: #fffaf2;
+      --ink: #1f1d18;
+      --muted: #6d6558;
+      --line: #d7ccb7;
+      --accent: #0d7b66;
+      --accent-2: #b35b3f;
+      --shadow: rgba(31,29,24,0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(13,123,102,0.12), transparent 26%),
+        radial-gradient(circle at bottom right, rgba(179,91,63,0.14), transparent 30%),
+        var(--bg);
+    }
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 18px 48px;
+      display: grid;
+      gap: 18px;
+    }
+    .hero, .panel {
+      background: rgba(255,250,242,0.92);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: 0 18px 44px var(--shadow);
+    }
+    .hero {
+      padding: 24px;
+      display: grid;
+      gap: 14px;
+    }
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1 {
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 0.95;
+    }
+    .subtitle {
+      max-width: 760px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .pills, .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .pill, .stat {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.72);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.95rem;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+      gap: 18px;
+    }
+    .panel {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+    .stack, .list {
+      display: grid;
+      gap: 10px;
+    }
+    .row {
+      display: grid;
+      gap: 4px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(215,204,183,0.7);
+    }
+    .row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+    .label {
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .value {
+      font-size: 1rem;
+      word-break: break-word;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .form-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    input[type="text"] {
+      flex: 1 1 320px;
+      min-width: 220px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.9);
+      padding: 12px 14px;
+      font: inherit;
+      color: var(--ink);
+    }
+    select {
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.9);
+      padding: 12px 14px;
+      font: inherit;
+      color: var(--ink);
+    }
+    button, a.button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 16px;
+      font: inherit;
+      cursor: pointer;
+      color: white;
+      background: linear-gradient(135deg, var(--accent), #0a6755);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .inline-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: end;
+    }
+    .button.secondary {
+      background: linear-gradient(135deg, var(--accent-2), #8f452f);
+    }
+    .session-card, .account-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      background: rgba(255,255,255,0.7);
+      display: grid;
+      gap: 10px;
+    }
+    .session-top {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .session-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .empty, .error {
+      border: 1px dashed var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      background: rgba(255,255,255,0.55);
+      color: var(--muted);
+    }
+    .error {
+      border-style: solid;
+      color: var(--accent-2);
+    }
+    code {
+      font-family: "SFMono-Regular", Menlo, Monaco, monospace;
+      font-size: 0.92em;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(31,29,24,0.08);
+      font-family: "SFMono-Regular", Menlo, Monaco, monospace;
+      font-size: 0.86rem;
+    }
+    .success {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: rgba(13,123,102,0.08);
+      color: var(--accent);
+    }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<main class="page">
+  <section class="hero">
+    <div class="eyebrow">Hosted Dashboard</div>
+    <h1>Relay control plane for your hosted debugging sessions.</h1>
+    <p class="subtitle">
+      This is the first real hosted dashboard surface. It resolves a relay account session into organization context, entitlement state, and the hosted sessions available in that workspace.
+    </p>
+    <form class="toolbar" id="session-form">
+      <input id="account-session-input" type="text" placeholder="Relay account session (auto-saved locally)" autocomplete="off">
+      <button type="submit">Open</button>
+      <a class="button secondary" id="share-link" href="#">Copyable URL</a>
+    </form>
+    <div class="stack" style="margin-top: 14px;">
+      <details class="card" open>
+        <summary><strong>Sign in</strong> (hosted alpha)</summary>
+        <div class="stack" style="margin-top: 12px;">
+          <div class="inline-actions">
+            <a class="button" href="/oauth2/authorization/github">Sign in with GitHub</a>
+            <a class="button secondary" href="/logout">Logout</a>
+          </div>
+          <form class="form-grid" id="login-form">
+            <input id="login-account-id" type="text" placeholder="Account id (example: acct-owner)" autocomplete="off">
+            <input id="login-org-id" type="text" placeholder="Organization id (optional)" autocomplete="off">
+            <button type="submit">Login</button>
+          </form>
+          <div id="login-feedback"></div>
+          <form class="form-grid" id="invite-form">
+            <input id="invite-token" type="text" placeholder="Invitation token" autocomplete="off">
+            <input id="invite-display-name" type="text" placeholder="Display name (optional)" autocomplete="off">
+            <button type="submit">Accept invite</button>
+          </form>
+          <div id="invite-feedback"></div>
+        </div>
+      </details>
+    </div>
+    <div class="pills">
+      <div class="pill" id="dashboard-status">Waiting for account session</div>
+      <div class="pill" id="dashboard-entitlement">Entitlement: n/a</div>
+      <div class="pill" id="dashboard-org">Organization: n/a</div>
+    </div>
+  </section>
+
+  <section class="layout">
+    <aside class="panel">
+      <h2>Workspace context</h2>
+      <div class="stack" id="workspace-details"></div>
+      <h3>Plan controls</h3>
+      <div class="stack">
+        <div class="inline-actions">
+          <select id="entitlement-plan">
+            <option value="alpha-trial">alpha-trial</option>
+            <option value="team">team</option>
+            <option value="free">free</option>
+          </select>
+          <select id="entitlement-status">
+            <option value="active">active</option>
+            <option value="inactive">inactive</option>
+          </select>
+          <input id="entitlement-seat-limit" type="text" placeholder="Seat limit">
+        </div>
+        <button id="entitlement-save" type="button">Update entitlement</button>
+        <div id="entitlement-feedback"></div>
+      </div>
+      <h3>Projects</h3>
+      <div class="stack">
+        <div class="inline-actions">
+          <input id="project-name" type="text" placeholder="Project name">
+          <button id="project-create" type="button">Create project</button>
+        </div>
+        <div id="project-feedback"></div>
+      </div>
+      <div class="list" id="projects-list"></div>
+      <h3>Organization accounts</h3>
+      <div class="stack">
+        <div class="form-grid">
+          <input id="member-display-name" type="text" placeholder="Display name">
+          <input id="member-account-id" type="text" placeholder="Account id (optional)">
+          <select id="member-role">
+            <option value="viewer">viewer</option>
+            <option value="owner">owner</option>
+          </select>
+        </div>
+        <button id="member-add" type="button">Add team member</button>
+        <div id="member-feedback"></div>
+      </div>
+      <div class="list" id="accounts-list"></div>
+    </aside>
+
+    <section class="panel">
+      <h2>Hosted sessions</h2>
+      <div class="stats" id="session-stats"></div>
+      <div class="list" id="sessions-list"></div>
+    </section>
+  </section>
+  <section class="panel">
+    <h2>Usage analytics</h2>
+    <div class="stats" id="analytics-stats"></div>
+    <div class="grid" id="analytics-details"></div>
+    <div class="grid">
+      <div>
+        <h3>Top actors</h3>
+        <div class="list" id="analytics-actors"></div>
+      </div>
+      <div>
+        <h3>Recent replay titles</h3>
+        <div class="list" id="analytics-replay"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  const initialAccountSession = '__ACCOUNT_SESSION__';
+  const ACCOUNT_SESSION_STORAGE_KEY = 'springDevtoolsUi.relay.accountSession';
+  const sessionForm = document.getElementById('session-form');
+  const accountSessionInput = document.getElementById('account-session-input');
+  const shareLink = document.getElementById('share-link');
+  const loginForm = document.getElementById('login-form');
+  const loginAccountId = document.getElementById('login-account-id');
+  const loginOrgId = document.getElementById('login-org-id');
+  const loginFeedback = document.getElementById('login-feedback');
+  const inviteForm = document.getElementById('invite-form');
+  const inviteToken = document.getElementById('invite-token');
+  const inviteDisplayName = document.getElementById('invite-display-name');
+  const inviteFeedback = document.getElementById('invite-feedback');
+  const dashboardStatus = document.getElementById('dashboard-status');
+  const dashboardEntitlement = document.getElementById('dashboard-entitlement');
+  const dashboardOrg = document.getElementById('dashboard-org');
+  const workspaceDetails = document.getElementById('workspace-details');
+  const accountsList = document.getElementById('accounts-list');
+  const sessionsList = document.getElementById('sessions-list');
+  const sessionStats = document.getElementById('session-stats');
+  const entitlementPlan = document.getElementById('entitlement-plan');
+  const entitlementStatus = document.getElementById('entitlement-status');
+  const entitlementSeatLimit = document.getElementById('entitlement-seat-limit');
+  const entitlementSave = document.getElementById('entitlement-save');
+  const entitlementFeedback = document.getElementById('entitlement-feedback');
+  const memberDisplayName = document.getElementById('member-display-name');
+  const memberAccountId = document.getElementById('member-account-id');
+  const memberRole = document.getElementById('member-role');
+  const memberAdd = document.getElementById('member-add');
+  const memberFeedback = document.getElementById('member-feedback');
+  const projectName = document.getElementById('project-name');
+  const projectCreate = document.getElementById('project-create');
+  const projectFeedback = document.getElementById('project-feedback');
+  const projectsList = document.getElementById('projects-list');
+  const analyticsStats = document.getElementById('analytics-stats');
+  const analyticsDetails = document.getElementById('analytics-details');
+  const analyticsActors = document.getElementById('analytics-actors');
+  const analyticsReplay = document.getElementById('analytics-replay');
+
+  function readStoredAccountSession() {
+    try {
+      return window.localStorage.getItem(ACCOUNT_SESSION_STORAGE_KEY) || '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function storeAccountSession(value) {
+    try {
+      if (!value) {
+        window.localStorage.removeItem(ACCOUNT_SESSION_STORAGE_KEY);
+      } else {
+        window.localStorage.setItem(ACCOUNT_SESSION_STORAGE_KEY, value);
+      }
+    } catch (error) {
+      // ignore storage failures (private mode, etc)
+    }
+  }
+
+  function setAccountSession(value) {
+    const token = String(value || '').trim();
+    accountSessionInput.value = token;
+    storeAccountSession(token);
+    updateShareLink(token);
+    const url = new URL(window.location.href);
+    if (token) {
+      url.searchParams.set('accountSession', token);
+    } else {
+      url.searchParams.delete('accountSession');
+    }
+    window.history.replaceState({}, '', url.toString());
+  }
+
+  setAccountSession(initialAccountSession || readStoredAccountSession());
+
+  function updateShareLink(value) {
+    const url = new URL(window.location.href);
+    if (value) {
+      url.searchParams.set('accountSession', value);
+    } else {
+      url.searchParams.delete('accountSession');
+    }
+    shareLink.href = url.toString();
+    shareLink.textContent = value ? 'Permalink ready' : 'Copyable URL';
+  }
+
+  function buildApiUrl(path, params = {}) {
+    const url = new URL(path, window.location.origin);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        url.searchParams.set(key, value);
+      }
+    });
+    return url.toString();
+  }
+
+  function renderRows(rows) {
+    return rows.map(([label, value]) => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `<div class="label">${label}</div><div class="value">${value ?? 'n/a'}</div>`;
+      return row;
+    });
+  }
+
+  async function fetchDashboard(accountSession) {
+    const response = await fetch(buildApiUrl('/sessions/dashboard', accountSession ? { accountSession } : {}));
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+    }
+    return response.json();
+  }
+
+  async function loginAccount(accountId, organizationId) {
+    const response = await fetch(buildApiUrl('/sessions/accounts/login'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        accountId: accountId,
+        organizationId: organizationId || null,
+      }),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+    }
+    return response.json();
+  }
+
+  async function acceptInvite(invitationTokenValue, displayName) {
+    const response = await fetch(buildApiUrl('/sessions/invitations/accept'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        invitationToken: invitationTokenValue,
+        displayName: displayName || null,
+      }),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+    }
+    return response.json();
+  }
+
+  async function fetchAnalytics(accountSession) {
+    const response = await fetch(buildApiUrl('/sessions/dashboard/analytics', accountSession ? { accountSession } : {}));
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+    }
+    return response.json();
+  }
+
+  function sessionViewerUrl(summary, accountSession) {
+    const url = new URL(summary.viewerUrl, window.location.origin);
+    if (accountSession) {
+      url.searchParams.set('accountSession', accountSession);
+    }
+    return url.toString();
+  }
+
+  loginForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    try {
+      loginFeedback.innerHTML = '';
+      const accountId = loginAccountId.value.trim();
+      if (!accountId) {
+        loginFeedback.innerHTML = '<div class="error">Enter an account id first.</div>';
+        return;
+      }
+      loginFeedback.innerHTML = '<div class="empty">Logging in...</div>';
+      const payload = await loginAccount(accountId, loginOrgId.value.trim());
+      setAccountSession(payload.accountSessionToken);
+      loginFeedback.innerHTML = `<div class="success">Logged in as ${payload.account?.displayName ?? payload.account?.accountId ?? 'account'}</div>`;
+      await load(payload.accountSessionToken);
+    } catch (error) {
+      loginFeedback.innerHTML = `<div class="error">${error.message}</div>`;
+    }
+  });
+
+  inviteForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    try {
+      inviteFeedback.innerHTML = '';
+      const token = inviteToken.value.trim();
+      if (!token) {
+        inviteFeedback.innerHTML = '<div class="error">Enter an invitation token first.</div>';
+        return;
+      }
+      inviteFeedback.innerHTML = '<div class="empty">Accepting invite...</div>';
+      const payload = await acceptInvite(token, inviteDisplayName.value.trim());
+      setAccountSession(payload.accountSessionToken);
+      inviteToken.value = '';
+      inviteDisplayName.value = '';
+      inviteFeedback.innerHTML = `<div class="success">Invite accepted. Logged in as ${payload.account?.displayName ?? payload.account?.accountId ?? 'account'}</div>`;
+      await load(payload.accountSessionToken);
+    } catch (error) {
+      inviteFeedback.innerHTML = `<div class="error">${error.message}</div>`;
+    }
+  });
+
+  function renderAccounts(accounts) {
+    if (!accounts.length) {
+      accountsList.innerHTML = '<div class="empty">No relay-owned accounts are registered for this workspace yet.</div>';
+      return;
+    }
+    accountsList.replaceChildren(...accounts.map((account) => {
+      const card = document.createElement('article');
+      card.className = 'account-card';
+      card.append(...renderRows([
+        ['Display name', account.displayName],
+        ['Account id', account.accountId],
+      ]));
+
+      const roleBlock = document.createElement('div');
+      roleBlock.className = 'stack';
+      roleBlock.innerHTML = `
+        <div class="label">Role</div>
+        <div class="inline-actions">
+          <select aria-label="Member role">
+            <option value="viewer">viewer</option>
+            <option value="owner">owner</option>
+          </select>
+          <button type="button">Save</button>
+        </div>
+        <div class="assign-output"></div>
+      `;
+      const roleSelect = roleBlock.querySelector('select');
+      const roleSave = roleBlock.querySelector('button');
+      const roleOutput = roleBlock.querySelector('.assign-output');
+      roleSelect.value = account.role || 'viewer';
+      roleSave.addEventListener('click', async () => {
+        try {
+          roleOutput.innerHTML = '';
+          const accountSession = accountSessionInput.value.trim();
+          if (!accountSession) {
+            roleOutput.innerHTML = '<div class="error">Missing account session.</div>';
+            return;
+          }
+          roleOutput.innerHTML = '<div class="empty">Updating role...</div>';
+          const response = await fetch(buildApiUrl(
+            `/sessions/dashboard/accounts/${encodeURIComponent(account.accountId)}/role`,
+            accountSession ? { accountSession } : {}
+          ), {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ role: roleSelect.value }),
+          });
+          if (!response.ok) {
+            const body = await response.text();
+            throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+          }
+          const payload = await response.json();
+          roleOutput.innerHTML = `<div class="success">Role updated to ${payload.role}</div>`;
+          await load(accountSession);
+        } catch (error) {
+          roleOutput.innerHTML = `<div class="error">${error.message}</div>`;
+        }
+      });
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'button secondary';
+      remove.textContent = 'Remove member';
+      remove.addEventListener('click', async () => {
+        try {
+          memberFeedback.innerHTML = '';
+          const accountSession = accountSessionInput.value.trim();
+          await fetch(buildApiUrl(`/sessions/dashboard/accounts/${encodeURIComponent(account.accountId)}`, accountSession ? {
+            accountSession,
+          } : {}), { method: 'DELETE' }).then(async (response) => {
+            if (!response.ok) {
+              const body = await response.text();
+              throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+            }
+          });
+          memberFeedback.innerHTML = `<div class="success">Removed ${account.accountId}</div>`;
+          await load(accountSessionInput.value.trim());
+        } catch (error) {
+          memberFeedback.innerHTML = `<div class="error">${error.message}</div>`;
+        }
+      });
+      card.append(roleBlock, remove);
+      return card;
+    }));
+  }
+
+  function renderProjects(projects) {
+    if (!projects.length) {
+      projectsList.innerHTML = '<div class="empty">No projects exist for this workspace yet.</div>';
+      return;
+    }
+    projectsList.replaceChildren(...projects.map((project) => {
+      const card = document.createElement('article');
+      card.className = 'account-card';
+      card.append(...renderRows([
+        ['Project', project.projectName],
+        ['Project id', project.projectId],
+      ]));
+      return card;
+    }));
+  }
+
+  function renderSessions(payload, accountSession, projects) {
+    const sessions = Array.isArray(payload.sessions) ? payload.sessions : [];
+    sessionStats.replaceChildren(...renderRows([
+      ['Hosted sessions', sessions.length],
+      ['Attached sessions', payload.status?.attachedSessionCount ?? 0],
+      ['Active viewer sessions', payload.status?.viewerSessionCount ?? 0],
+    ]));
+    if (!sessions.length) {
+      sessionsList.innerHTML = '<div class="empty">No hosted sessions exist for this organization yet. Attach from a local dashboard and sync to the relay first.</div>';
+      return;
+    }
+    sessionsList.replaceChildren(...sessions.map((session) => {
+      const card = document.createElement('article');
+      card.className = 'session-card';
+      const top = document.createElement('div');
+      top.className = 'session-top';
+      top.innerHTML = `
+        <div>
+          <div class="label">Session</div>
+          <div class="value"><strong>${session.sessionId}</strong></div>
+        </div>
+        <div class="session-meta">
+          <div class="pill">${session.published ? 'Published' : 'Unpublished'}</div>
+          <div class="pill">${session.relayStatus || 'detached'}</div>
+          <div class="pill">${session.tunnelStatus || 'closed'}</div>
+        </div>
+      `;
+      const grid = document.createElement('div');
+      grid.className = 'grid';
+      grid.append(...renderRows([
+        ['Owner', session.ownerName],
+        ['Project', session.projectName || 'unassigned'],
+        ['Access scope', session.accessScope],
+        ['Version', session.sessionVersion],
+        ['Last published', session.lastPublishedAt || 'never'],
+        ['Hosted members', session.activeMemberCount],
+        ['Viewer sessions', session.viewerSessionCount],
+        ['Replay entries', session.replayCount],
+        ['Recording snapshots', session.recordingCount],
+      ]));
+      const projectAssign = document.createElement('div');
+      projectAssign.className = 'stack';
+      const projectOptions = (Array.isArray(projects) ? projects : []).map((project) => (
+        `<option value="${project.projectId}">${project.projectName}</option>`
+      )).join('');
+      projectAssign.innerHTML = `
+        <div class="label">Project assignment</div>
+        <div class="inline-actions">
+          <select aria-label="Project assignment">
+            <option value="">unassigned</option>
+            ${projectOptions}
+          </select>
+          <button type="button">Save</button>
+        </div>
+        <div class="assign-output"></div>
+      `;
+      const projectSelect = projectAssign.querySelector('select');
+      const projectSave = projectAssign.querySelector('button');
+      const projectOutput = projectAssign.querySelector('.assign-output');
+      projectSelect.value = session.projectId || '';
+      projectSave.addEventListener('click', async () => {
+        try {
+          projectOutput.innerHTML = '';
+          const response = await fetch(buildApiUrl(
+            `/sessions/dashboard/sessions/${encodeURIComponent(session.sessionId)}/project`,
+            accountSession ? { accountSession } : {}
+          ), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectId: projectSelect.value || null }),
+          });
+          if (!response.ok) {
+            const body = await response.text();
+            throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+          }
+          projectOutput.innerHTML = `<div class="success">Saved project assignment</div>`;
+          await load(accountSession);
+        } catch (error) {
+          projectOutput.innerHTML = `<div class="error">${error.message}</div>`;
+        }
+      });
+      const link = document.createElement('a');
+      link.className = 'button';
+      link.href = sessionViewerUrl(session, accountSession);
+      link.textContent = 'Open hosted session';
+      const replay = document.createElement('div');
+      replay.className = 'stack';
+      replay.innerHTML = `
+        <div class="label">Cloud request replay</div>
+        <div class="inline-actions">
+          <input type="text" placeholder="Relay request id" aria-label="Relay request id">
+          <button type="button">Prepare replay</button>
+        </div>
+        <div class="replay-output"></div>
+      `;
+      const replayInput = replay.querySelector('input');
+      const replayButton = replay.querySelector('button');
+      const replayOutput = replay.querySelector('.replay-output');
+      replayButton.addEventListener('click', async () => {
+        const requestId = replayInput.value.trim();
+        if (!requestId) {
+          replayOutput.innerHTML = '<div class="error">Enter a relay request id first.</div>';
+          return;
+        }
+        try {
+          replayOutput.innerHTML = '<div class="empty">Preparing replay package...</div>';
+          const response = await fetch(buildApiUrl(
+            `/sessions/dashboard/sessions/${encodeURIComponent(session.sessionId)}/requests/${encodeURIComponent(requestId)}/replay`,
+            accountSession ? { accountSession } : {}
+          ), { method: 'POST' });
+          if (!response.ok) {
+            const body = await response.text();
+            throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+          }
+          const payload = await response.json();
+          replayOutput.innerHTML = `
+            <div class="card">
+              <div class="card-title">${payload.method} ${payload.path} · original ${payload.originalStatus}</div>
+              <div class="label">${payload.replayHint}</div>
+              <pre>${payload.curlCommand}</pre>
+            </div>
+          `;
+        } catch (error) {
+          replayOutput.innerHTML = `<div class="error">${error.message}</div>`;
+        }
+      });
+      const remoteDebug = document.createElement('div');
+      remoteDebug.className = 'stack';
+      remoteDebug.innerHTML = `
+        <div class="label">Remote debugging</div>
+        <button type="button">Load debug context</button>
+        <div class="remote-debug-output"></div>
+      `;
+      const remoteDebugButton = remoteDebug.querySelector('button');
+      const remoteDebugOutput = remoteDebug.querySelector('.remote-debug-output');
+      remoteDebugButton.addEventListener('click', async () => {
+        try {
+          remoteDebugOutput.innerHTML = '<div class="empty">Loading remote debug context...</div>';
+          const response = await fetch(buildApiUrl(
+            `/sessions/dashboard/sessions/${encodeURIComponent(session.sessionId)}/remote-debug`,
+            accountSession ? { accountSession } : {}
+          ));
+          if (!response.ok) {
+            const body = await response.text();
+            throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+          }
+          const payload = await response.json();
+          const requests = Array.isArray(payload.recentRequests) ? payload.recentRequests : [];
+          const requestLines = requests.length
+            ? requests.map((request) => {
+                const flags = [];
+                if (request.binaryBody) flags.push('binary');
+                if (request.bodyTruncated) flags.push('truncated');
+                const suffix = flags.length ? ` [${flags.join(', ')}]` : '';
+                return `${request.method} ${request.path} -> ${request.responseStatus} (${request.requestId})${suffix}`;
+              }).join('\n')
+            : 'No recent request artifacts';
+          remoteDebugOutput.innerHTML = `
+            <div class="card">
+              <div class="card-title">Session ${payload.sessionId} debug context</div>
+              <div class="label">Focused artifact: ${payload.focusedArtifactType || 'n/a'} / ${payload.focusedArtifactId || 'n/a'}</div>
+              <div class="label">Activity: ${payload.activityCount} · Notes: ${payload.debugNoteCount} · Recordings: ${payload.recordingCount} · Requests: ${payload.requestArtifactCount}</div>
+              <pre>${requestLines}</pre>
+            </div>
+          `;
+        } catch (error) {
+          remoteDebugOutput.innerHTML = `<div class="error">${error.message}</div>`;
+        }
+      });
+      const invite = document.createElement('div');
+      invite.className = 'stack';
+      invite.innerHTML = `
+        <div class="label">Session sharing</div>
+        <div class="form-grid">
+          <input type="text" placeholder="teammate@example.test" aria-label="Invite email">
+          <input type="text" placeholder="Display name" aria-label="Invite display name">
+          <select aria-label="Invite role">
+            <option value="viewer">viewer</option>
+            <option value="guest">guest</option>
+          </select>
+        </div>
+        <button type="button">Create invitation</button>
+        <div class="invite-output"></div>
+      `;
+      const inviteEmail = invite.querySelector('input[aria-label="Invite email"]');
+      const inviteDisplayName = invite.querySelector('input[aria-label="Invite display name"]');
+      const inviteRole = invite.querySelector('select');
+      const inviteButton = invite.querySelector('button');
+      const inviteOutput = invite.querySelector('.invite-output');
+      inviteButton.addEventListener('click', async () => {
+        const email = inviteEmail.value.trim();
+        if (!email) {
+          inviteOutput.innerHTML = '<div class="error">Enter an invite email first.</div>';
+          return;
+        }
+        try {
+          inviteOutput.innerHTML = '<div class="empty">Creating invitation...</div>';
+          const response = await fetch(buildApiUrl(
+            `/sessions/dashboard/sessions/${encodeURIComponent(session.sessionId)}/invitations`,
+            accountSession ? { accountSession } : {}
+          ), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email,
+              displayName: inviteDisplayName.value.trim() || email,
+              role: inviteRole.value,
+            }),
+          });
+          if (!response.ok) {
+            const body = await response.text();
+            throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+          }
+          const payload = await response.json();
+          inviteOutput.innerHTML = `
+            <div class="card">
+              <div class="card-title">Invitation created for ${payload.email}</div>
+              <div class="label">Send this invitation token to the teammate.</div>
+              <pre>${payload.invitationToken}</pre>
+              <div class="label">Accept with:</div>
+              <pre>curl -s -X POST '${window.location.origin}/sessions/invitations/accept' -H 'Content-Type: application/json' -d '{"invitationToken":"${payload.invitationToken}","accountId":"acct-${payload.displayName.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()}"}'</pre>
+            </div>
+          `;
+          inviteEmail.value = '';
+          inviteDisplayName.value = '';
+          inviteRole.value = 'viewer';
+        } catch (error) {
+          inviteOutput.innerHTML = `<div class="error">${error.message}</div>`;
+        }
+      });
+      card.append(top, grid, projectAssign, link, invite, replay, remoteDebug);
+      return card;
+    }));
+  }
+
+  function renderSimpleList(root, items, emptyMessage) {
+    if (!items.length) {
+      root.innerHTML = `<div class="empty">${emptyMessage}</div>`;
+      return;
+    }
+    root.replaceChildren(...items.map((item) => {
+      const card = document.createElement('article');
+      card.className = 'card';
+      card.innerHTML = `<div class="value">${item}</div>`;
+      return card;
+    }));
+  }
+
+  async function load(accountSession) {
+    updateShareLink(accountSession);
+    if (!accountSession) {
+      dashboardStatus.textContent = 'Loading relay workspace...';
+      dashboardEntitlement.textContent = 'Entitlement: n/a';
+      dashboardOrg.textContent = 'Organization: n/a';
+      workspaceDetails.innerHTML = '<div class="empty">If you are signed in via GitHub, the dashboard will load automatically. Otherwise paste or create a relay account session token above.</div>';
+    }
+
+    try {
+      const [payload, analytics] = await Promise.all([
+        fetchDashboard(accountSession),
+        fetchAnalytics(accountSession),
+      ]);
+      dashboardStatus.textContent = `Signed in as ${payload.account?.displayName ?? 'relay user'}`;
+      dashboardEntitlement.textContent = `Entitlement: ${payload.entitlement?.plan ?? 'n/a'} / ${payload.entitlement?.status ?? 'n/a'}`;
+      dashboardOrg.textContent = `Organization: ${payload.organization?.organizationName ?? 'n/a'}`;
+      entitlementPlan.value = payload.entitlement?.plan ?? 'alpha-trial';
+      entitlementStatus.value = payload.entitlement?.status ?? 'active';
+      entitlementSeatLimit.value = String(payload.entitlement?.seatLimit ?? 0);
+      workspaceDetails.replaceChildren(...renderRows([
+        ['Account', payload.account?.displayName],
+        ['Account id', payload.account?.accountId],
+        ['Organization', payload.organization?.organizationName],
+        ['Organization id', payload.organization?.organizationId],
+        ['Role', payload.account?.role],
+        ['Seat limit', payload.entitlement?.seatLimit],
+        ['Team enabled', String(payload.entitlement?.teamEnabled ?? false)],
+        ['Quota sessions', `${payload.quota?.sessionCount ?? 0} / ${payload.quota?.maxSessions ?? 0}`],
+        ['Quota projects', `${payload.quota?.projectCount ?? 0} / ${payload.quota?.maxProjects ?? 0}`],
+        ['Quota viewer sessions', `${payload.quota?.viewerSessionCount ?? 0} / ${payload.quota?.maxViewerSessions ?? 0}`],
+        ['Quota request artifacts', `${payload.quota?.requestArtifactCount ?? 0} / ${payload.quota?.maxRequestArtifacts ?? 0}`],
+        ['Public relay URL', payload.status?.publicBaseUrl],
+      ]));
+      const projects = Array.isArray(payload.projects) ? payload.projects : [];
+      renderProjects(projects);
+      renderAccounts(Array.isArray(payload.organizationAccounts) ? payload.organizationAccounts : []);
+      renderSessions(payload, accountSession, projects);
+      analyticsStats.replaceChildren(...renderRows([
+        ['Sessions', analytics.sessionCount ?? 0],
+        ['Published', analytics.publishedSessionCount ?? 0],
+        ['Active viewers', analytics.activeViewerSessionCount ?? 0],
+      ]));
+      analyticsDetails.replaceChildren(...renderRows([
+        ['Attached sessions', analytics.attachedSessionCount ?? 0],
+        ['Request artifacts', analytics.requestArtifactCount ?? 0],
+        ['Replay entries', analytics.replayEntryCount ?? 0],
+        ['Debug notes', analytics.debugNoteCount ?? 0],
+        ['Recordings', analytics.recordingCount ?? 0],
+        ['Audit events', analytics.auditEventCount ?? 0],
+      ]));
+      renderSimpleList(analyticsActors, Array.isArray(analytics.topActors) ? analytics.topActors : [], 'No actor activity is available yet.');
+      renderSimpleList(analyticsReplay, Array.isArray(analytics.recentReplayTitles) ? analytics.recentReplayTitles : [], 'No replay titles are available yet.');
+    } catch (error) {
+      dashboardStatus.textContent = 'Failed to load relay workspace';
+      workspaceDetails.innerHTML = `<div class="error">${error.message}</div>`;
+      accountsList.innerHTML = '<div class="error">Could not load organization accounts.</div>';
+      sessionsList.innerHTML = '<div class="error">Could not load hosted sessions.</div>';
+      sessionStats.innerHTML = '';
+      projectsList.innerHTML = '<div class="error">Could not load projects.</div>';
+      analyticsStats.innerHTML = '';
+      analyticsDetails.innerHTML = '';
+      analyticsActors.innerHTML = '<div class="error">Could not load analytics.</div>';
+      analyticsReplay.innerHTML = '<div class="error">Could not load analytics.</div>';
+    }
+  }
+
+  sessionForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const value = accountSessionInput.value.trim();
+    const url = new URL(window.location.href);
+    if (value) {
+      url.searchParams.set('accountSession', value);
+    } else {
+      url.searchParams.delete('accountSession');
+    }
+    window.history.replaceState({}, '', url.toString());
+    load(value);
+  });
+
+  memberAdd.addEventListener('click', async () => {
+    const accountSession = accountSessionInput.value.trim();
+    try {
+      memberFeedback.innerHTML = '';
+      const response = await fetch(buildApiUrl('/sessions/dashboard/accounts', accountSession ? { accountSession } : {}), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountId: memberAccountId.value.trim() || null,
+          displayName: memberDisplayName.value.trim(),
+          role: memberRole.value,
+        }),
+      });
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+      }
+      const created = await response.json();
+      memberFeedback.innerHTML = `<div class="success">Added ${created.accountId}</div>`;
+      memberDisplayName.value = '';
+      memberAccountId.value = '';
+      memberRole.value = 'viewer';
+      await load(accountSession);
+    } catch (error) {
+      memberFeedback.innerHTML = `<div class="error">${error.message}</div>`;
+    }
+  });
+
+  entitlementSave.addEventListener('click', async () => {
+    const accountSession = accountSessionInput.value.trim();
+    try {
+      entitlementFeedback.innerHTML = '';
+      const response = await fetch(buildApiUrl('/sessions/dashboard/entitlement', accountSession ? { accountSession } : {}), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: entitlementPlan.value,
+          status: entitlementStatus.value,
+          seatLimit: Number(entitlementSeatLimit.value || '0'),
+        }),
+      });
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+      }
+      const entitlement = await response.json();
+      entitlementFeedback.innerHTML = `<div class="success">Entitlement updated to ${entitlement.plan}/${entitlement.status}</div>`;
+      await load(accountSession);
+    } catch (error) {
+      entitlementFeedback.innerHTML = `<div class="error">${error.message}</div>`;
+    }
+  });
+
+  projectCreate.addEventListener('click', async () => {
+    const accountSession = accountSessionInput.value.trim();
+    try {
+      projectFeedback.innerHTML = '';
+      const response = await fetch(buildApiUrl('/sessions/dashboard/projects', accountSession ? { accountSession } : {}), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectName: projectName.value.trim(),
+        }),
+      });
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+      }
+      const created = await response.json();
+      projectFeedback.innerHTML = `<div class="success">Created ${created.projectName}</div>`;
+      projectName.value = '';
+      await load(accountSession);
+    } catch (error) {
+      projectFeedback.innerHTML = `<div class="error">${error.message}</div>`;
+    }
+  });
+
+  updateShareLink(initialAccountSession);
+  load(accountSessionInput.value.trim());
+</script>
+</body>
+</html>

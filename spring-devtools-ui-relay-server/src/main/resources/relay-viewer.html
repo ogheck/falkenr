@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Falkenr Relay Viewer</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f1e8;
+      --panel: #fffaf0;
+      --ink: #1d1b16;
+      --muted: #6b6356;
+      --line: #d8ceb9;
+      --accent: #0e7c66;
+      --accent-2: #b85c38;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top left, rgba(14,124,102,0.12), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(184,92,56,0.14), transparent 32%),
+        var(--bg);
+      color: var(--ink);
+    }
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+    .hero {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(2.2rem, 6vw, 4.8rem);
+      line-height: 0.96;
+    }
+    .subtitle {
+      margin: 0;
+      max-width: 760px;
+      font-size: 1rem;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .pill {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.7);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+      gap: 18px;
+    }
+    .panel {
+      background: rgba(255,250,240,0.9);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 18px 45px rgba(29,27,22,0.06);
+      min-height: 220px;
+    }
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 1.15rem;
+    }
+    .stack {
+      display: grid;
+      gap: 10px;
+    }
+    .row {
+      display: grid;
+      gap: 4px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(216,206,185,0.6);
+    }
+    .row:last-child { border-bottom: 0; padding-bottom: 0; }
+    .label {
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .value {
+      font-size: 1rem;
+      word-break: break-word;
+    }
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      background: rgba(255,255,255,0.68);
+    }
+    .card-title {
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .empty, .error {
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px dashed var(--line);
+      color: var(--muted);
+      background: rgba(255,255,255,0.5);
+    }
+    .error {
+      color: var(--accent-2);
+      border-style: solid;
+    }
+    .note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<main class="page">
+  <section class="hero">
+    <div class="eyebrow">Hosted Session Viewer</div>
+    <h1>Relay-backed snapshot for <span id="session-id-heading"></span></h1>
+    <p class="subtitle">
+      This is the first real hosted destination for Falkenr share links. It renders relay-owned hosted session state and publication history outside the local <code>/_dev</code> dashboard.
+    </p>
+    <div class="meta">
+      <div class="pill" id="access-pill"></div>
+      <div class="pill" id="availability-pill"></div>
+      <div class="pill" id="history-pill"></div>
+    </div>
+  </section>
+
+  <section class="grid">
+    <aside class="panel">
+      <h2>Current hosted view</h2>
+      <div class="stack" id="current-view"></div>
+      <p class="note">This hosted surface now requires a registered relay access token. The token is still displayed here so the early hosted flow remains inspectable during development.</p>
+    </aside>
+
+    <section class="panel">
+      <h2>Published history</h2>
+      <div class="list" id="history-list"></div>
+    </section>
+  </section>
+  <section class="panel" style="margin-top:18px;">
+    <h2>Focused request artifact</h2>
+    <div class="stack" id="artifact-view"></div>
+  </section>
+  <section class="grid" style="margin-top:18px;">
+    <section class="panel">
+      <h2>Session activity</h2>
+      <div class="list" id="activity-list"></div>
+    </section>
+    <section class="panel">
+      <h2>Debug notes</h2>
+      <div class="list" id="notes-list"></div>
+    </section>
+  </section>
+  <section class="panel" style="margin-top:18px;">
+    <h2>Recording snapshots</h2>
+    <div class="list" id="recordings-list"></div>
+  </section>
+</main>
+
+<script>
+  const sessionId = '__SESSION_ID__';
+  const viewerSession = '__VIEWER_SESSION__';
+  const currentView = document.getElementById('current-view');
+  const historyList = document.getElementById('history-list');
+  const artifactView = document.getElementById('artifact-view');
+  const activityList = document.getElementById('activity-list');
+  const notesList = document.getElementById('notes-list');
+  const recordingsList = document.getElementById('recordings-list');
+  document.getElementById('session-id-heading').textContent = sessionId;
+  const apiOrigin = window.location.origin;
+
+  function renderRows(rows) {
+    return rows.map(([label, value]) => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `<div class="label">${label}</div><div class="value">${value ?? 'n/a'}</div>`;
+      return row;
+    });
+  }
+
+  function setStatus(view, historyCount) {
+    document.getElementById('access-pill').textContent = viewerSession ? `Viewer session: ${viewerSession.slice(0, 18)}...` : 'No viewer session';
+    document.getElementById('availability-pill').textContent = view?.available ? 'Hosted view available' : 'Hosted view unavailable';
+    document.getElementById('history-pill').textContent = `${historyCount} published snapshot${historyCount === 1 ? '' : 's'}`;
+  }
+
+  function buildApiUrl(path, params = {}) {
+    const url = new URL(path, apiOrigin);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        url.searchParams.set(key, value);
+      }
+    });
+    return url.toString();
+  }
+
+  async function fetchJson(path, params = {}) {
+    const response = await fetch(buildApiUrl(path, params));
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+    }
+    return response.json();
+  }
+
+  async function load() {
+    try {
+      const [viewResponse, historyResponse] = await Promise.all([
+        fetchJson(`/sessions/viewer/${encodeURIComponent(sessionId)}/hosted-view`, { viewerSession }),
+        fetchJson(`/sessions/viewer/${encodeURIComponent(sessionId)}/hosted-history`, { viewerSession })
+      ]);
+
+      const historyPayload = historyResponse || { items: [] };
+      const view = viewResponse || null;
+      const history = Array.isArray(historyPayload.items) ? historyPayload.items : [];
+
+      setStatus(view, history.length);
+
+      if (!view) {
+        currentView.innerHTML = '<div class="empty">No hosted view is available for this session yet. Attach and publish from the local dashboard first.</div>';
+        artifactView.innerHTML = '<div class="empty">No focused request artifact.</div>';
+      } else {
+        currentView.replaceChildren(...renderRows([
+          ['Owner', view.ownerName],
+          ['Access scope', view.accessScope],
+          ['Relay viewer URL', view.relayViewerUrl],
+          ['Durable state', view.durableState],
+          ['Session version', view.sessionVersion],
+          ['Published version', view.publishedVersion],
+          ['Focused artifact', view.focusedArtifactType && view.focusedArtifactId ? `${view.focusedArtifactType}:${view.focusedArtifactId}` : 'n/a'],
+          ['Members', view.activeMemberCount],
+          ['Replay count', view.replayCount],
+          ['Recordings', view.recordingCount],
+          ['Last published', view.lastPublishedAt]
+        ]));
+
+        if (view.focusedArtifactType === 'request' && view.focusedArtifactId) {
+          try {
+            const artifact = await fetchJson(
+              `/sessions/viewer/${encodeURIComponent(sessionId)}/artifacts/request`,
+              { requestId: view.focusedArtifactId, viewerSession }
+            );
+            artifactView.replaceChildren(...renderRows([
+              ['Request ID', artifact.requestId],
+              ['Method', artifact.method],
+              ['Path', artifact.path],
+              ['Status', artifact.responseStatus],
+              ['Timestamp', artifact.timestamp],
+              ['Body', artifact.binaryBody ? '[binary payload omitted]' : (artifact.body || '[empty]')]
+            ]));
+          } catch (error) {
+            artifactView.innerHTML = '<div class="empty">Focused request artifact is not available on the relay yet.</div>';
+          }
+        } else {
+          artifactView.innerHTML = '<div class="empty">No focused request artifact.</div>';
+        }
+      }
+
+      const [activityResponse, notesResponse, recordingsResponse] = await Promise.all([
+        fetchJson(`/sessions/viewer/${encodeURIComponent(sessionId)}/collaboration/activity`, { viewerSession }),
+        fetchJson(`/sessions/viewer/${encodeURIComponent(sessionId)}/collaboration/notes`, { viewerSession }),
+        fetchJson(`/sessions/viewer/${encodeURIComponent(sessionId)}/collaboration/recordings`, { viewerSession })
+      ]);
+      const activityPayload = activityResponse || { items: [] };
+      const notesPayload = notesResponse || { items: [] };
+      const recordingsPayload = recordingsResponse || { items: [] };
+      const activity = Array.isArray(activityPayload.items) ? activityPayload.items : [];
+      const notes = Array.isArray(notesPayload.items) ? notesPayload.items : [];
+      const recordings = Array.isArray(recordingsPayload.items) ? recordingsPayload.items : [];
+
+      if (!activity.length) {
+        activityList.innerHTML = '<div class="empty">No persisted activity on the relay yet.</div>';
+      } else {
+        activityList.replaceChildren(...activity.map((entry) => {
+          const card = document.createElement('article');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="card-title">${entry.eventType}</div>
+            <div class="label">${entry.actor || 'system'} · ${entry.timestamp || 'n/a'}</div>
+            <div class="value">${entry.detail || 'n/a'}</div>
+          `;
+          return card;
+        }));
+      }
+
+      if (!notes.length) {
+        notesList.innerHTML = '<div class="empty">No persisted debug notes on the relay yet.</div>';
+      } else {
+        notesList.replaceChildren(...notes.map((entry) => {
+          const card = document.createElement('article');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="card-title">${entry.author || 'unknown'}</div>
+            <div class="label">${entry.createdAt || 'n/a'}</div>
+            <div class="value">${entry.message || 'n/a'}</div>
+          `;
+          return card;
+        }));
+      }
+
+      if (!recordings.length) {
+        recordingsList.innerHTML = '<div class="empty">No persisted recording snapshots on the relay yet.</div>';
+      } else {
+        recordingsList.replaceChildren(...recordings.map((entry) => {
+          const card = document.createElement('article');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="card-title">${entry.recordingId || 'recording'}</div>
+            <div class="label">${entry.startedBy || 'unknown'} · ${entry.startedAt || 'n/a'}</div>
+            <div class="value">activity ${entry.activityCount ?? 0} · replay ${entry.replayCount ?? 0} · notes ${entry.debugNoteCount ?? 0}</div>
+          `;
+          return card;
+        }));
+      }
+
+      if (!history.length) {
+        historyList.innerHTML = '<div class="empty">No published history yet.</div>';
+        return;
+      }
+
+      historyList.replaceChildren(...history.map((entry) => {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-title">${entry.viewId || 'published-view'} · v${entry.publishedVersion ?? 'n/a'}</div>
+          <div class="stack">
+            <div class="row"><div class="label">Published</div><div class="value">${entry.lastPublishedAt ?? 'n/a'}</div></div>
+            <div class="row"><div class="label">Owner</div><div class="value">${entry.ownerName ?? 'n/a'}</div></div>
+            <div class="row"><div class="label">Recent actors</div><div class="value">${(entry.recentActors || []).join(', ') || 'n/a'}</div></div>
+            <div class="row"><div class="label">Recent replay titles</div><div class="value">${(entry.recentReplayTitles || []).join(', ') || 'n/a'}</div></div>
+          </div>
+        `;
+        return card;
+      }));
+    } catch (error) {
+      currentView.innerHTML = `<div class="error">${error.message}</div>`;
+      historyList.innerHTML = '<div class="error">Failed to load hosted history.</div>';
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>
