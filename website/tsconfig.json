@@ -13,6 +13,7 @@
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "types": ["react", "react-dom"],
     "noEmit": true,
     "jsx": "react-jsx"
   },

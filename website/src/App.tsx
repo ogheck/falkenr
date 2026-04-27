@@ -1,8 +1,11 @@
+import React from "react";
+
 const installSnippet = `dependencies {
   implementation("io.github.ogheck:spring-devtools-ui:0.1.5")
 }`;
 
 const PUBLIC_REPO_URL = "https://github.com/ogheck/falkenr";
+const INFO_EMAIL = "info@falkenr.com";
 
 const statusItems = [
   { label: "Local debugging", value: "complete" },
@@ -39,11 +42,14 @@ const FEATURES = {
 };
 
 const CAL_LINK = (import.meta as any).env?.VITE_BOOK_CALL_URL as string | undefined;
+const EARLY_ACCESS_ENDPOINT = ((import.meta as any).env?.VITE_EARLY_ACCESS_ENDPOINT
+  || ((import.meta as any).env?.PROD ? "/api/early-access" : undefined)) as string | undefined;
 const EARLY_ACCESS_EMAIL = "ogheck@gmail.com";
 
-function mailto(subject: string) {
+function mailto(subject: string, body?: string, email = EARLY_ACCESS_EMAIL) {
   const encoded = encodeURIComponent(subject);
-  return `mailto:${EARLY_ACCESS_EMAIL}?subject=${encoded}`;
+  const encodedBody = body ? `&body=${encodeURIComponent(body)}` : "";
+  return `mailto:${email}?subject=${encoded}${encodedBody}`;
 }
 
 function usePathname() {
@@ -94,6 +100,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <NavLink href="/">Home</NavLink>
+            <NavLink href="/quickstart">Quickstart</NavLink>
             <NavLink href="/early-access">Early access</NavLink>
             <NavLink href="/pricing">Pricing</NavLink>
             <a
@@ -139,6 +146,12 @@ function HomePage() {
               className="inline-flex items-center justify-center border border-ink bg-ink px-5 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:bg-pine"
             >
               Get started (free)
+            </a>
+            <a
+              href="/quickstart"
+              className="inline-flex items-center justify-center border border-ink/20 px-5 py-3 text-sm uppercase tracking-[0.22em] text-ink transition hover:border-ink"
+            >
+              Quickstart
             </a>
             <a
               href="/app"
@@ -362,7 +375,142 @@ function HomePage() {
   );
 }
 
+function QuickstartPage() {
+  return (
+    <section className="space-y-10">
+      <div className="space-y-5">
+        <div className="inline-flex items-center gap-3 border border-ink/15 bg-white/50 px-3 py-2 text-[11px] uppercase tracking-[0.28em] text-slate">
+          Quickstart
+          <span className="h-2 w-2 rounded-full bg-ember" />
+          Spring Boot
+        </div>
+        <h1 className="font-display text-[clamp(2.6rem,7vw,5rem)] leading-[0.95] tracking-[-0.05em] text-ink">
+          Open your first local runtime dashboard in minutes.
+        </h1>
+        <p className="max-w-2xl text-base leading-7 text-slate sm:text-lg">
+          Add the starter, restart your app, and open <span className="font-mono text-ink">/_dev</span>. Start with
+          local debugging before turning on hosted collaboration.
+        </p>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+        <div className="border border-ink/15 bg-white/60 p-5">
+          <div className="text-[11px] uppercase tracking-[0.28em] text-slate">Prerequisites</div>
+          <div className="mt-4 grid gap-2 text-sm leading-6 text-slate">
+            <div>Java 17 or 21</div>
+            <div>Spring Boot 3.2.x or 3.3.x</div>
+            <div>Spring MVC application</div>
+            <div>Gradle or Maven</div>
+          </div>
+        </div>
+
+        <div className="border border-ink/15 bg-white/60 p-5">
+          <div className="text-[11px] uppercase tracking-[0.28em] text-slate">Gradle</div>
+          <pre className="mt-4 overflow-auto bg-ink px-4 py-4 text-sm leading-6 text-paper">
+            <code>{installSnippet}</code>
+          </pre>
+        </div>
+      </div>
+
+      <div className="grid gap-4">
+        {[
+          {
+            title: "1. Add the dependency",
+            body: "Install the starter in the Spring Boot app you already use for local development.",
+          },
+          {
+            title: "2. Restart locally",
+            body: "Run your app normally. Falkenr is enabled for local development and disabled automatically for the prod profile.",
+          },
+          {
+            title: "3. Open /_dev",
+            body: "Go to http://localhost:8080/_dev and inspect endpoints, requests, config, logs, jobs, DB queries, feature flags, and dependency state.",
+          },
+          {
+            title: "4. Share only when needed",
+            body: "For team debugging, request early access and connect the local dashboard to the hosted relay.",
+          },
+        ].map((step) => (
+          <div key={step.title} className="border border-ink/15 bg-white/60 p-5">
+            <div className="text-[11px] uppercase tracking-[0.28em] text-ember">{step.title}</div>
+            <p className="mt-3 text-sm leading-6 text-slate">{step.body}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <a
+          href={PUBLIC_REPO_URL}
+          className="inline-flex items-center justify-center border border-ink bg-ink px-5 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:bg-pine"
+        >
+          Open GitHub
+        </a>
+        <a
+          href="/early-access"
+          className="inline-flex items-center justify-center border border-ink/20 px-5 py-3 text-sm uppercase tracking-[0.22em] text-ink transition hover:border-ink"
+        >
+          Request hosted access
+        </a>
+      </div>
+    </section>
+  );
+}
+
 function EarlyAccessPage() {
+  const [leadForm, setLeadForm] = React.useState({
+    name: "",
+    email: "",
+    company: "",
+    teamSize: "",
+    pain: "",
+  });
+  const [leadStatus, setLeadStatus] = React.useState<"idle" | "sending" | "sent" | "error">("idle");
+
+  function updateLeadField(field: keyof typeof leadForm, value: string) {
+    setLeadForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function submitLead(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!EARLY_ACCESS_ENDPOINT) {
+      window.location.href = mailto(
+        "Falkenr early access request",
+        [
+          `Name: ${leadForm.name}`,
+          `Email: ${leadForm.email}`,
+          `Company: ${leadForm.company}`,
+          `Team size: ${leadForm.teamSize}`,
+          `Debugging pain: ${leadForm.pain}`,
+        ].join("\n"),
+        INFO_EMAIL
+      );
+      return;
+    }
+
+    setLeadStatus("sending");
+    try {
+      const response = await fetch(EARLY_ACCESS_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...leadForm,
+          source: "website-early-access",
+          capturedAt: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Lead capture failed with ${response.status}`);
+      }
+
+      setLeadStatus("sent");
+      setLeadForm({ name: "", email: "", company: "", teamSize: "", pain: "" });
+    } catch {
+      setLeadStatus("error");
+    }
+  }
+
   return (
     <section className="space-y-10">
       <div className="space-y-5">
@@ -473,13 +621,21 @@ function EarlyAccessPage() {
           </div>
           <div className="flex flex-col gap-3">
             <a
-              href={mailto("mailto:info@falkenr.com?subject=Falkenr%2015-min%20call&body=Hi%20-%20I'd%20like%20to%20schedule%20a%2015-minute%20call%20about%20Falkenr.")}
+              href={mailto(
+                "Falkenr early access request",
+                "Hi - I'm interested in early access to Falkenr.",
+                INFO_EMAIL
+              )}
               className="inline-flex items-center justify-center border border-paper/20 px-6 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:border-paper"
             >
               Request early access
             </a>
             <a
-              href={CAL_LINK || mailto("mailto:info@falkenr.com?subject=Falkenr%2015-min%20call&body=Hi%20-%20I'd%20like%20to%20schedule%20a%2015-minute%20call%20about%20Falkenr.")}
+              href={CAL_LINK || mailto(
+                "Falkenr 15-min call",
+                "Hi - I'd like to schedule a 15-minute call about Falkenr.",
+                INFO_EMAIL
+              )}
               className="inline-flex items-center justify-center border border-paper/20 px-6 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:border-paper"
             >
               Book a 15-min call
@@ -487,6 +643,72 @@ function EarlyAccessPage() {
           </div>
         </div>
       </div>
+
+      <form onSubmit={submitLead} className="grid gap-4 border border-ink/15 bg-white/70 p-5 lg:grid-cols-2">
+        <div className="lg:col-span-2">
+          <div className="text-[11px] uppercase tracking-[0.28em] text-slate">Join early access</div>
+          <p className="mt-2 text-sm leading-6 text-slate">
+            Tell us who should evaluate Falkenr and what debugging workflow you want to test first.
+          </p>
+        </div>
+        <label className="grid gap-2 text-sm text-slate">
+          Name
+          <input
+            required
+            value={leadForm.name}
+            onChange={(event) => updateLeadField("name", event.target.value)}
+            className="border border-ink/20 bg-paper px-4 py-3 text-ink outline-none focus:border-ink"
+          />
+        </label>
+        <label className="grid gap-2 text-sm text-slate">
+          Work email
+          <input
+            required
+            type="email"
+            value={leadForm.email}
+            onChange={(event) => updateLeadField("email", event.target.value)}
+            className="border border-ink/20 bg-paper px-4 py-3 text-ink outline-none focus:border-ink"
+          />
+        </label>
+        <label className="grid gap-2 text-sm text-slate">
+          Company
+          <input
+            value={leadForm.company}
+            onChange={(event) => updateLeadField("company", event.target.value)}
+            className="border border-ink/20 bg-paper px-4 py-3 text-ink outline-none focus:border-ink"
+          />
+        </label>
+        <label className="grid gap-2 text-sm text-slate">
+          Team size
+          <input
+            value={leadForm.teamSize}
+            onChange={(event) => updateLeadField("teamSize", event.target.value)}
+            className="border border-ink/20 bg-paper px-4 py-3 text-ink outline-none focus:border-ink"
+          />
+        </label>
+        <label className="grid gap-2 text-sm text-slate lg:col-span-2">
+          Debugging workflow to test
+          <textarea
+            rows={4}
+            value={leadForm.pain}
+            onChange={(event) => updateLeadField("pain", event.target.value)}
+            className="resize-y border border-ink/20 bg-paper px-4 py-3 text-ink outline-none focus:border-ink"
+          />
+        </label>
+        <div className="flex flex-wrap items-center gap-3 lg:col-span-2">
+          <button
+            type="submit"
+            disabled={leadStatus === "sending"}
+            className="border border-ink bg-ink px-5 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:bg-pine disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {leadStatus === "sending" ? "Sending" : "Request access"}
+          </button>
+          {leadStatus === "sent" ? <span className="text-sm text-pine">Request received.</span> : null}
+          {leadStatus === "error" ? (
+            <span className="text-sm text-ember">Could not submit. Email fallback is still available.</span>
+          ) : null}
+        </div>
+      </form>
     </section>
   );
 }
@@ -644,9 +866,9 @@ export default function App() {
   const page = pathname.replace(/\/+$/, "") || "/";
 
   let content: React.ReactNode = <HomePage />;
+  if (page === "/quickstart") content = <QuickstartPage />;
   if (page === "/early-access") content = <EarlyAccessPage />;
   if (page === "/pricing") content = <PricingPage />;
 
   return <Shell>{content}</Shell>;
 }
-import React from "react";
