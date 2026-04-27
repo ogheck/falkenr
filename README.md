@@ -2,8 +2,6 @@
 
 Falkenr is a zero-config Spring Boot developer dashboard delivered by a single starter dependency.
 
-Add one dependency, restart your app, open `http://localhost:8080/_dev`, and inspect runtime behavior without wiring a separate service.
-
 ## Install
 
 Gradle:
@@ -22,23 +20,48 @@ Maven:
 </dependency>
 ```
 
+## Use
+
+Add the dependency, restart your Spring Boot app, then open:
+
+```text
+http://localhost:8080/_dev
+```
+
+The dashboard is local-first and is disabled automatically when the `prod` profile is active.
+
 ## What It Shows
 
-- Endpoints and request history
-- Logs, config, scheduled jobs, and dependency graph
-- DB query capture when a JDBC datasource is present
-- Feature flag overrides, time controls, fake external services, and webhook replay tools
-- Local session sharing primitives for development and alpha collaboration workflows
-
-## Safety Defaults
-
-- Enabled for local development by default
-- Restricted to localhost requests in the default mode
-- Disabled automatically when the `prod` Spring profile is active
-- Masks sensitive config keys, headers, payload fields, SQL values, and session-like secrets
-- Keeps request/log/query history bounded in memory unless persistence is explicitly configured
+- Endpoints
+- Request history
+- Logs
+- Config values
+- Scheduled jobs
+- Dependency graph
+- DB queries when a JDBC datasource is present
+- Feature flag overrides
+- Time controls
+- Fake external services
+- Webhook replay tools
 
 This project is intended for development and controlled non-production debugging. Do not expose `/_dev` publicly without an authenticated ingress and explicit access controls.
+
+## Modules
+
+- `spring-devtools-ui-starter`: dependency-only starter published as `io.github.ogheck:spring-devtools-ui`
+- `spring-devtools-ui-core`: collector SPI, in-memory stores, policy helpers, and API models
+- `spring-devtools-ui-autoconfigure`: Spring Boot auto-configuration, controllers, filters, and bundled dashboard assets
+- `spring-devtools-ui-ui`: React/Vite dashboard source and committed `dist` bundle
+- `examples/*`: Gradle and Maven consumer apps
+- `website`: public landing/docs site
+
+## Defaults
+
+- Serves the dashboard at `/_dev`
+- Restricts access to localhost by default
+- Disables itself when the `prod` profile is active
+- Keeps captured data in memory
+- Masks common sensitive values before rendering
 
 ## Run Locally
 
@@ -46,20 +69,7 @@ This project is intended for development and controlled non-production debugging
 ./gradlew :examples:demo-app:bootRun
 ```
 
-Then open:
-
-```text
-http://localhost:8080/_dev
-```
-
-For the public website:
-
-```bash
-cd website
-npm ci
-npm run build
-npm run preview
-```
+Then open `http://localhost:8080/_dev`.
 
 ## Build
 
@@ -72,16 +82,6 @@ cd ..
 ./gradlew validateVersioning build
 ```
 
-## Modules
-
-- `spring-devtools-ui-starter`: dependency-only starter published as `io.github.ogheck:spring-devtools-ui`
-- `spring-devtools-ui-core`: collectors, policy interfaces, and DTOs
-- `spring-devtools-ui-autoconfigure`: Spring Boot auto-configuration, API controllers, filters, and bundled UI serving
-- `spring-devtools-ui-relay-server`: hosted relay backend for managed attach and shared session viewing
-- `spring-devtools-ui-ui`: React + Vite dashboard source and bundled assets
-- `examples/*`: Gradle and Maven consumer apps
-- `website`: public landing/docs site
-
 ## Documentation
 
 - [Compatibility](docs/COMPATIBILITY.md)
@@ -90,3 +90,6 @@ cd ..
 - [Releasing](docs/RELEASING.md)
 - [Upgrading](docs/UPGRADING.md)
 
+## License
+
+Apache License, Version 2.0.
