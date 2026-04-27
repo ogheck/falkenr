@@ -181,6 +181,32 @@ function HomePage() {
       </section>
       </header>
 
+      <section className="border-y border-ink/10 py-12 lg:py-16">
+        <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+          <div className="space-y-4">
+            <div className="text-[11px] uppercase tracking-[0.28em] text-slate">Product preview</div>
+            <h2 className="font-display text-4xl tracking-[-0.04em] text-ink sm:text-5xl">
+              The actual runtime dashboard, not a mockup.
+            </h2>
+            <p className="text-sm leading-7 text-slate sm:text-base">
+              Falkenr runs inside your Spring Boot app and exposes live runtime state through a local dashboard first.
+              Hosted sharing builds on the same session when another developer needs to inspect it with you.
+            </p>
+          </div>
+          <figure className="border border-ink/15 bg-white/70 p-3 shadow-plate">
+            <img
+              src="/screenshots/dashboard-live.png"
+              alt="Falkenr live dashboard showing runtime debugging panels"
+              className="aspect-[3164/2070] w-full object-cover"
+              loading="lazy"
+            />
+            <figcaption className="mt-3 text-xs uppercase tracking-[0.22em] text-slate/80">
+              Local dashboard at /_dev
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
       <section className="grid gap-8 border-t border-ink/10 py-12 lg:grid-cols-2 lg:py-16">
         <div className="space-y-4">
           <div className="text-[11px] uppercase tracking-[0.28em] text-slate">How it works</div>
