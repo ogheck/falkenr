@@ -195,13 +195,13 @@ function HomePage() {
           </div>
           <figure className="border border-ink/15 bg-white/70 p-3 shadow-plate">
             <img
-              src="/screenshots/dashboard-live.png"
-              alt="Falkenr live dashboard showing runtime debugging panels"
-              className="aspect-[3164/2070] w-full object-cover"
+              src="/demo/falkenr-demo.gif"
+              alt="Short Falkenr demo showing install, local dashboard inspection, session sharing, and collaboration"
+              className="aspect-[3/2] w-full object-cover"
               loading="lazy"
             />
             <figcaption className="mt-3 text-xs uppercase tracking-[0.22em] text-slate/80">
-              Local dashboard at /_dev
+              Short workflow demo
             </figcaption>
           </figure>
         </div>
