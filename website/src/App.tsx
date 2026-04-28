@@ -5,6 +5,7 @@ const installSnippet = `dependencies {
 }`;
 
 const PUBLIC_REPO_URL = "https://github.com/ogheck/falkenr";
+const HOSTED_APP_URL = "https://app.falkenr.com/app";
 const INFO_EMAIL = "info@falkenr.com";
 
 const statusItems = [
@@ -372,13 +373,13 @@ function HomePage() {
       <section className="overflow-hidden border border-ink bg-ink text-paper">
         <div className="grid gap-8 px-6 py-10 lg:grid-cols-[1fr_auto] lg:px-8">
           <div className="space-y-3">
-            <div className="text-[11px] uppercase tracking-[0.28em] text-sand">Simple pricing (coming soon)</div>
+            <div className="text-[11px] uppercase tracking-[0.28em] text-sand">Simple pricing</div>
             <h2 className="font-display text-3xl tracking-[-0.04em] text-paper sm:text-4xl">
               Start debugging and sharing in minutes.
             </h2>
             <p className="max-w-2xl text-sm leading-6 text-sand">
-              Free: local dashboard for individual developers. Team: shared sessions, remote debugging, collaboration.
-              Pro: staging, persistence, environment comparison. Enterprise: SSO, RBAC, audit logs, governance.
+              Free: local dashboard for individual developers. Team beta: hosted collaboration and shared debugging
+              sessions. Pro and Enterprise remain scoped for larger rollout needs.
             </p>
           </div>
           <div className="flex flex-col gap-3 self-end">
@@ -746,13 +747,13 @@ function PricingPage() {
         <div className="inline-flex items-center gap-3 border border-ink/15 bg-white/50 px-3 py-2 text-[11px] uppercase tracking-[0.28em] text-slate">
           Pricing
           <span className="h-2 w-2 rounded-full bg-ember" />
-          coming soon
+          paid beta
         </div>
         <h1 className="font-display text-[clamp(2.6rem,7vw,5rem)] leading-[0.95] tracking-[-0.05em] text-ink">
           Pricing for real debugging, not dashboards.
         </h1>
         <p className="max-w-2xl text-base leading-7 text-slate sm:text-lg">
-          Start free locally. Pay when your team needs to debug together.
+          Start free locally. Upgrade to Team when your team needs hosted collaboration and shared debugging sessions.
         </p>
       </div>
 
@@ -772,7 +773,7 @@ function PricingPage() {
         />
         <PricingCard
           name="Team"
-          price="Free during alpha"
+          price="$20 / month"
           tag="For teams debugging across machines"
           bullets={[
             "Shareable debugging sessions",
@@ -780,9 +781,9 @@ function PricingPage() {
             "Hosted viewer",
             "Shared request replay",
             "Multi-developer session view",
-            "Session notes and collaboration",
+            "Stripe Checkout and Team entitlement",
           ]}
-          cta={{ label: "Request early access", href: "/early-access" }}
+          cta={{ label: "Start Team beta", href: HOSTED_APP_URL }}
           highlight
         />
         <PricingCard
@@ -840,10 +841,10 @@ function PricingPage() {
               Get started
             </a>
             <a
-              href="/early-access"
+              href={HOSTED_APP_URL}
               className="inline-flex items-center justify-center border border-ink/20 px-5 py-3 text-sm uppercase tracking-[0.22em] text-ink transition hover:border-ink"
             >
-              Join early access
+              Start Team beta
             </a>
           </div>
         </div>

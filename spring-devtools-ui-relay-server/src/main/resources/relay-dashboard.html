@@ -215,6 +215,20 @@
       background: rgba(13,123,102,0.08);
       color: var(--accent);
     }
+    .onboarding {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      background: rgba(255,255,255,0.68);
+      display: grid;
+      gap: 10px;
+    }
+    .onboarding ol {
+      margin: 0;
+      padding-left: 22px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
     @media (max-width: 980px) {
       .layout { grid-template-columns: 1fr; }
       .grid { grid-template-columns: 1fr; }
@@ -262,6 +276,15 @@
       <div class="pill" id="dashboard-status">Waiting for account session</div>
       <div class="pill" id="dashboard-entitlement">Entitlement: n/a</div>
       <div class="pill" id="dashboard-org">Organization: n/a</div>
+    </div>
+    <div class="onboarding" id="onboarding-panel">
+      <h2>First relay attach</h2>
+      <ol>
+        <li>Sign in with GitHub or paste an owner account session.</li>
+        <li>Add the Falkenr starter to a local Spring Boot app and open <code>/_dev</code>.</li>
+        <li>Set the managed relay URL to <code>https://app.falkenr.com</code>, then attach from the Session tab.</li>
+        <li>Return here to invite a teammate, prepare replay artifacts, or upgrade to Team.</li>
+      </ol>
     </div>
   </section>
 
@@ -359,6 +382,7 @@
   const dashboardStatus = document.getElementById('dashboard-status');
   const dashboardEntitlement = document.getElementById('dashboard-entitlement');
   const dashboardOrg = document.getElementById('dashboard-org');
+  const onboardingPanel = document.getElementById('onboarding-panel');
   const workspaceDetails = document.getElementById('workspace-details');
   const billingPanel = document.getElementById('billing-panel');
   const accountsList = document.getElementById('accounts-list');
@@ -1001,6 +1025,21 @@
     });
   }
 
+  function renderOnboarding(payload) {
+    const sessions = Array.isArray(payload.sessions) ? payload.sessions : [];
+    const hasAttachedSession = sessions.some((session) => session.relayStatus === 'connected' || session.relayStatus === 'synced');
+    const teamEnabled = payload.entitlement?.teamEnabled === true;
+    onboardingPanel.innerHTML = `
+      <h2>${hasAttachedSession ? 'Relay attached' : 'First relay attach'}</h2>
+      <ol>
+        <li>${payload.account ? `Signed in as ${payload.account.displayName}.` : 'Sign in with GitHub or paste an owner account session.'}</li>
+        <li>${hasAttachedSession ? 'A local Spring Boot app has attached to this workspace.' : 'Add the Falkenr starter to a local Spring Boot app and open <code>/_dev</code>.'}</li>
+        <li>${hasAttachedSession ? 'Open the hosted session below or create an invitation for a teammate.' : 'Set the managed relay URL to <code>https://app.falkenr.com</code>, then attach from the Session tab.'}</li>
+        <li>${teamEnabled ? 'Team collaboration is enabled for this workspace.' : 'Upgrade to Team when you are ready to share hosted debugging sessions.'}</li>
+      </ol>
+    `;
+  }
+
   async function load(accountSession) {
     updateShareLink(accountSession);
     if (!accountSession) {
@@ -1009,6 +1048,15 @@
       dashboardOrg.textContent = 'Organization: n/a';
       workspaceDetails.innerHTML = '<div class="empty">If you are signed in via GitHub, the dashboard will load automatically. Otherwise paste or create a relay account session token above.</div>';
       billingPanel.innerHTML = '<div class="empty">Load a workspace to manage billing.</div>';
+      onboardingPanel.innerHTML = `
+        <h2>First relay attach</h2>
+        <ol>
+          <li>Sign in with GitHub or paste an owner account session.</li>
+          <li>Add the Falkenr starter to a local Spring Boot app and open <code>/_dev</code>.</li>
+          <li>Set the managed relay URL to <code>https://app.falkenr.com</code>, then attach from the Session tab.</li>
+          <li>Return here to invite a teammate, prepare replay artifacts, or upgrade to Team.</li>
+        </ol>
+      `;
     }
 
     try {
@@ -1037,6 +1085,7 @@
         ['Public relay URL', payload.status?.publicBaseUrl],
       ]));
       const projects = Array.isArray(payload.projects) ? payload.projects : [];
+      renderOnboarding(payload);
       renderBilling(payload, accountSession);
       renderProjects(projects);
       renderAccounts(Array.isArray(payload.organizationAccounts) ? payload.organizationAccounts : []);
