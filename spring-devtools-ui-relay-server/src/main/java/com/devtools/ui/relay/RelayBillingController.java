@@ -88,6 +88,39 @@ class RelayBillingController {
         );
     }
 
+    @PostMapping("/portal")
+    RelayBillingPortalResponse createPortalSession(@RequestParam(name = "accountSession", required = false) String accountSessionToken,
+                                                   HttpServletRequest httpRequest) throws Exception {
+        requireStripeApiConfigured();
+        String resolvedAccountSession = resolveAccountSessionToken(accountSessionToken, httpRequest);
+        RelayAccountDescriptor owner = sessionStore.billingOwner(resolvedAccountSession);
+        String stripeCustomerId = sessionStore.billingCustomerId(resolvedAccountSession);
+
+        String form = formBody(List.of(
+                entry("customer", stripeCustomerId),
+                entry("return_url", properties.publicBaseUrl() + "/app?billing=portal")
+        ));
+
+        HttpRequest stripeRequest = HttpRequest.newBuilder(URI.create("https://api.stripe.com/v1/billing_portal/sessions"))
+                .header("Authorization", "Bearer " + properties.stripeApiKey())
+                .header("Content-Type", MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+                .POST(HttpRequest.BodyPublishers.ofString(form))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(stripeRequest, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IllegalStateException("Stripe customer portal session creation failed");
+        }
+
+        JsonNode json = objectMapper.readTree(response.body());
+        return new RelayBillingPortalResponse(
+                "stripe",
+                json.path("id").asText(),
+                json.path("url").asText(),
+                owner.organizationId()
+        );
+    }
+
     @PostMapping("/stripe/webhook")
     RelayBillingWebhookResponse stripeWebhook(@RequestBody String body,
                                               @RequestHeader(name = "Stripe-Signature", required = false) String signature) throws Exception {
@@ -106,6 +139,11 @@ class RelayBillingController {
                 || "customer.subscription.created".equals(type)
                 || "customer.subscription.updated".equals(type)) {
             int seats = Math.max(1, object.path("quantity").asInt(1));
+            sessionStore.billingUpdateStripeLink(
+                    organizationId,
+                    customerIdFrom(object),
+                    subscriptionIdFrom(type, object)
+            );
             RelayEntitlementResponse entitlement = sessionStore.billingUpdateEntitlement(
                     organizationId,
                     new RelayEntitlementRequest("team", "active", seats)
@@ -144,6 +182,12 @@ class RelayBillingController {
         }
     }
 
+    private void requireStripeApiConfigured() {
+        if (properties.stripeApiKey().isBlank()) {
+            throw new BillingNotConfiguredException("Stripe billing requires stripe-api-key");
+        }
+    }
+
     private void requireStripeWebhookConfigured() {
         if (properties.stripeWebhookSecret().isBlank()) {
             throw new BillingNotConfiguredException("Stripe webhook verification requires stripe-webhook-secret");
@@ -163,6 +207,25 @@ class RelayBillingController {
             return fromMetadata.trim();
         }
         return object.path("client_reference_id").asText("").trim();
+    }
+
+    private String customerIdFrom(JsonNode object) {
+        JsonNode customer = object.path("customer");
+        if (customer.isTextual()) {
+            return customer.asText("").trim();
+        }
+        return customer.path("id").asText("").trim();
+    }
+
+    private String subscriptionIdFrom(String eventType, JsonNode object) {
+        if (eventType != null && eventType.startsWith("customer.subscription.")) {
+            return object.path("id").asText("").trim();
+        }
+        JsonNode subscription = object.path("subscription");
+        if (subscription.isTextual()) {
+            return subscription.asText("").trim();
+        }
+        return subscription.path("id").asText("").trim();
     }
 
     private void verifyStripeSignature(String body, String signature) throws Exception {

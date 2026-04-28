@@ -251,6 +251,14 @@ record RelayBillingWebhookResponse(
 ) {
 }
 
+record RelayBillingPortalResponse(
+        String provider,
+        String portalSessionId,
+        String portalUrl,
+        String organizationId
+) {
+}
+
 record RelayQuotaResponse(
         String organizationId,
         int maxSessions,

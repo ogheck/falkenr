@@ -912,12 +912,14 @@
       <div class="inline-actions">
         <input id="billing-seat-quantity" type="text" inputmode="numeric" placeholder="Seats" value="${Math.max(1, seatLimit || 1)}">
         <button id="billing-upgrade" type="button">${teamEnabled ? 'Update Team seats' : 'Upgrade to Team'}</button>
+        <button id="billing-portal" type="button"${teamEnabled ? '' : ' disabled'}>Manage invoices</button>
       </div>
       <div id="billing-feedback"></div>
     `;
 
     const seatQuantity = billingPanel.querySelector('#billing-seat-quantity');
     const upgrade = billingPanel.querySelector('#billing-upgrade');
+    const portal = billingPanel.querySelector('#billing-portal');
     const feedback = billingPanel.querySelector('#billing-feedback');
     upgrade.addEventListener('click', async () => {
       try {
@@ -942,6 +944,30 @@
           throw new Error('Stripe checkout did not return a checkout URL.');
         }
         window.location.assign(checkout.checkoutUrl);
+      } catch (error) {
+        feedback.innerHTML = `<div class="error">${error.message}</div>`;
+      }
+    });
+    portal.addEventListener('click', async () => {
+      try {
+        feedback.innerHTML = '';
+        if (!accountSession) {
+          feedback.innerHTML = '<div class="error">Missing account session.</div>';
+          return;
+        }
+        feedback.innerHTML = '<div class="empty">Opening Stripe customer portal...</div>';
+        const response = await fetch(buildApiUrl('/sessions/billing/portal', { accountSession }), {
+          method: 'POST',
+        });
+        if (!response.ok) {
+          const body = await response.text();
+          throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+        }
+        const portalSession = await response.json();
+        if (!portalSession.portalUrl) {
+          throw new Error('Stripe customer portal did not return a portal URL.');
+        }
+        window.location.assign(portalSession.portalUrl);
       } catch (error) {
         feedback.innerHTML = `<div class="error">${error.message}</div>`;
       }

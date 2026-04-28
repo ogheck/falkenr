@@ -44,6 +44,9 @@ class RelaySessionControllerTest {
     @Autowired
     private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
+    @Autowired
+    private InMemoryRelaySessionStore sessionStore;
+
     private String accountSessionTokenForOwner(String ownerName) throws Exception {
         mockMvc.perform(post("/sessions/attach")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -99,6 +102,16 @@ class RelaySessionControllerTest {
     }
 
     @Test
+    void billingPortalFailsClearlyWhenStripeIsNotConfigured() throws Exception {
+        String accountSession = accountSessionTokenForOwner("portal-owner");
+
+        mockMvc.perform(post("/sessions/billing/portal")
+                        .param("accountSession", accountSession))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.error").value("billing_not_configured"));
+    }
+
+    @Test
     void signedStripeWebhookActivatesTeamEntitlement() throws Exception {
         String accountSession = accountSessionTokenForOwner("stripe");
         String body = """
@@ -110,6 +123,8 @@ class RelaySessionControllerTest {
                             "metadata": {
                               "organizationId": "org-stripe"
                             },
+                            "customer": "cus_test_123",
+                            "subscription": "sub_test_123",
                             "quantity": 4
                           }
                         }
@@ -133,6 +148,9 @@ class RelaySessionControllerTest {
                 .andExpect(jsonPath("$.status").value("active"))
                 .andExpect(jsonPath("$.seatLimit").value(4))
                 .andExpect(jsonPath("$.teamEnabled").value(true));
+
+        org.assertj.core.api.Assertions.assertThat(sessionStore.billingCustomerId(accountSession))
+                .isEqualTo("cus_test_123");
     }
 
     @Test

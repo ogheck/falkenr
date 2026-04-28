@@ -41,6 +41,7 @@ class InMemoryRelaySessionStore {
     private final Map<String, RelayAccountSession> accountSessions = new ConcurrentHashMap<>();
     private final Map<String, RelayInvitation> invitations = new ConcurrentHashMap<>();
     private final Map<String, RelayEntitlement> entitlements = new ConcurrentHashMap<>();
+    private final Map<String, RelayBillingProfile> billingProfiles = new ConcurrentHashMap<>();
     private final Map<String, RelayProject> projects = new ConcurrentHashMap<>();
     private final Map<String, String> revokedTokenJtis = new ConcurrentHashMap<>();
     private final Map<String, RelayWebIdentityBinding> webIdentityBindings = new ConcurrentHashMap<>();
@@ -103,6 +104,7 @@ class InMemoryRelaySessionStore {
         accountSessions.clear();
         invitations.clear();
         entitlements.clear();
+        billingProfiles.clear();
         projects.clear();
         revokedTokenJtis.clear();
         webIdentityBindings.clear();
@@ -114,6 +116,7 @@ class InMemoryRelaySessionStore {
                 state.accountSessions(),
                 state.invitations(),
                 state.entitlements(),
+                state.billingProfiles(),
                 state.projects(),
                 state.revokedTokenJtis(),
                 state.webIdentityBindings(),
@@ -864,6 +867,31 @@ class InMemoryRelaySessionStore {
         return requireDashboardOwner(accountSessionToken);
     }
 
+    synchronized String billingCustomerId(String accountSessionToken) {
+        RelayAccountDescriptor owner = requireDashboardOwner(accountSessionToken);
+        RelayBillingProfile profile = billingProfiles.get(owner.organizationId());
+        if (profile == null || profile.stripeCustomerId() == null || profile.stripeCustomerId().isBlank()) {
+            throw new NoSuchElementException("No Stripe customer is linked for this organization");
+        }
+        return profile.stripeCustomerId();
+    }
+
+    synchronized void billingUpdateStripeLink(String organizationId, String stripeCustomerId, String stripeSubscriptionId) {
+        if ((stripeCustomerId == null || stripeCustomerId.isBlank())
+                && (stripeSubscriptionId == null || stripeSubscriptionId.isBlank())) {
+            return;
+        }
+        requireOrganization(organizationId);
+        RelayBillingProfile existing = billingProfiles.get(organizationId);
+        String customerId = stripeCustomerId == null || stripeCustomerId.isBlank()
+                ? existing == null ? "" : existing.stripeCustomerId()
+                : stripeCustomerId.trim();
+        String subscriptionId = stripeSubscriptionId == null || stripeSubscriptionId.isBlank()
+                ? existing == null ? "" : existing.stripeSubscriptionId()
+                : stripeSubscriptionId.trim();
+        billingProfiles.put(organizationId, new RelayBillingProfile(customerId, subscriptionId));
+    }
+
     synchronized RelayEntitlementResponse billingUpdateEntitlement(String organizationId, RelayEntitlementRequest request) {
         return upsertEntitlement(organizationId, request);
     }
@@ -1552,7 +1580,7 @@ class InMemoryRelaySessionStore {
         try {
             byte[] bytes = Files.readAllBytes(persistenceFile);
             RelayStateSnapshot state = objectMapper.readValue(bytes, RelayStateSnapshot.class);
-            loadSnapshots(state.sessions(), state.organizations(), state.accounts(), state.accountSessions(), state.invitations(), state.entitlements(), state.projects(), state.revokedTokenJtis(), state.webIdentityBindings(), state.auditEvents());
+            loadSnapshots(state.sessions(), state.organizations(), state.accounts(), state.accountSessions(), state.invitations(), state.entitlements(), state.billingProfiles(), state.projects(), state.revokedTokenJtis(), state.webIdentityBindings(), state.auditEvents());
         } catch (IOException stateException) {
             try {
                 List<RelaySessionRecordSnapshot> snapshots = objectMapper.readValue(
@@ -1560,7 +1588,7 @@ class InMemoryRelaySessionStore {
                         new TypeReference<>() {
                         }
                 );
-                loadSnapshots(snapshots, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), List.of());
+                loadSnapshots(snapshots, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), List.of());
             } catch (IOException listException) {
                 throw new IllegalStateException("Failed to load relay persistence from " + persistenceFile, listException);
             }
@@ -1573,6 +1601,7 @@ class InMemoryRelaySessionStore {
                                Map<String, RelayAccountSession> persistedAccountSessions,
                                Map<String, RelayInvitation> persistedInvitations,
                                Map<String, RelayEntitlement> persistedEntitlements,
+                               Map<String, RelayBillingProfile> persistedBillingProfiles,
                                Map<String, RelayProject> persistedProjects,
                                Map<String, String> persistedRevokedTokenJtis,
                                Map<String, RelayWebIdentityBinding> persistedWebIdentityBindings,
@@ -1582,6 +1611,7 @@ class InMemoryRelaySessionStore {
         accountSessions.putAll(persistedAccountSessions == null ? Map.of() : persistedAccountSessions);
         invitations.putAll(persistedInvitations == null ? Map.of() : persistedInvitations);
         entitlements.putAll(persistedEntitlements == null ? Map.of() : persistedEntitlements);
+        billingProfiles.putAll(persistedBillingProfiles == null ? Map.of() : persistedBillingProfiles);
         projects.putAll(persistedProjects == null ? Map.of() : persistedProjects);
         revokedTokenJtis.putAll(persistedRevokedTokenJtis == null ? Map.of() : persistedRevokedTokenJtis);
         webIdentityBindings.putAll(persistedWebIdentityBindings == null ? Map.of() : persistedWebIdentityBindings);
@@ -1643,6 +1673,7 @@ class InMemoryRelaySessionStore {
                 new HashMap<>(accountSessions),
                 new HashMap<>(invitations),
                 new HashMap<>(entitlements),
+                new HashMap<>(billingProfiles),
                 new HashMap<>(projects),
                 new HashMap<>(revokedTokenJtis),
                 new HashMap<>(webIdentityBindings),
@@ -1846,6 +1877,9 @@ class InMemoryRelaySessionStore {
         }
     }
 
+    private record RelayBillingProfile(String stripeCustomerId, String stripeSubscriptionId) {
+    }
+
     private record RelayProject(
             String projectId,
             String organizationId,
@@ -1878,6 +1912,7 @@ class InMemoryRelaySessionStore {
             Map<String, RelayAccountSession> accountSessions,
             Map<String, RelayInvitation> invitations,
             Map<String, RelayEntitlement> entitlements,
+            Map<String, RelayBillingProfile> billingProfiles,
             Map<String, RelayProject> projects,
             Map<String, String> revokedTokenJtis,
             Map<String, RelayWebIdentityBinding> webIdentityBindings,
