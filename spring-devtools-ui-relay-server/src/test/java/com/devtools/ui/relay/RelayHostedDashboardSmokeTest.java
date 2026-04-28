@@ -88,7 +88,9 @@ class RelayHostedDashboardSmokeTest {
         mockMvc.perform(get("/app"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Hosted Dashboard")))
-                .andExpect(content().string(containsString("Sign in")));
+                .andExpect(content().string(containsString("Sign in")))
+                .andExpect(content().string(containsString("Team plan required.")))
+                .andExpect(content().string(containsString("data-billing-upgrade")));
 
         // Owner login.
         String ownerLoginResponse = mockMvc.perform(post("/sessions/accounts/login")
