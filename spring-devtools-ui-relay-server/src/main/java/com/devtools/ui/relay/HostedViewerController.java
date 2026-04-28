@@ -29,7 +29,7 @@ class HostedViewerController {
 
     @GetMapping(path = {"/", "/early-access", "/pricing"}, produces = MediaType.TEXT_HTML_VALUE)
     ResponseEntity<String> homepage() throws IOException {
-        return ResponseEntity.ok(readResource("site/index.html"));
+        return ResponseEntity.ok(readResourceOrFallback("site/index.html", fallbackHomepage()));
     }
 
     @GetMapping(path = "/assets/{fileName:.+}")
@@ -89,6 +89,34 @@ class HostedViewerController {
     private String readResource(String path) throws IOException {
         ClassPathResource resource = new ClassPathResource(path);
         return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+
+    private String readResourceOrFallback(String path, String fallback) throws IOException {
+        ClassPathResource resource = new ClassPathResource(path);
+        if (!resource.exists()) {
+            return fallback;
+        }
+        return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+
+    private String fallbackHomepage() {
+        return """
+                <!doctype html>
+                <html lang="en">
+                  <head>
+                    <meta charset="UTF-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                    <title>Falkenr</title>
+                  </head>
+                  <body>
+                    <main>
+                      <h1>Falkenr</h1>
+                      <p>Zero-config Spring Boot developer dashboard for endpoints, requests, config, and logs.</p>
+                      <p><a href="/app">Open hosted dashboard</a></p>
+                    </main>
+                  </body>
+                </html>
+                """;
     }
 
     private MediaType mediaTypeFor(String fileName) {

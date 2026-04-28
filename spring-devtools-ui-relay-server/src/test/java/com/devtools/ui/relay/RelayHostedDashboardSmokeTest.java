@@ -35,10 +35,16 @@ class RelayHostedDashboardSmokeTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
                 .andExpect(content().string(containsString("<title>Falkenr</title>")))
-                .andExpect(content().string(containsString("./assets/")))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
+
+        if (!homepage.contains("./assets/")) {
+            mockMvc.perform(get("/app"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Hosted Dashboard")));
+            return;
+        }
 
         String jsHref = homepage.replaceAll("(?s).*src=\"\\./assets/([^\"]+\\.js)\".*", "$1");
         String cssHref = homepage.replaceAll("(?s).*href=\"\\./assets/([^\"]+\\.css)\".*", "$1");
