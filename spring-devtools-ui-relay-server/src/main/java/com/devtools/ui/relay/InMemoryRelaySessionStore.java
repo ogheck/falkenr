@@ -860,6 +860,14 @@ class InMemoryRelaySessionStore {
         return upsertEntitlement(caller.organizationId(), request);
     }
 
+    synchronized RelayAccountDescriptor billingOwner(String accountSessionToken) {
+        return requireDashboardOwner(accountSessionToken);
+    }
+
+    synchronized RelayEntitlementResponse billingUpdateEntitlement(String organizationId, RelayEntitlementRequest request) {
+        return upsertEntitlement(organizationId, request);
+    }
+
     synchronized RelayCloudRequestReplayResponse cloudRequestReplay(String accountSessionToken, String sessionId, String requestId) {
         RelayAccountDescriptor account = requireDashboardAccount(accountSessionToken);
         RelaySessionRecord record = requireSession(sessionId);

@@ -34,7 +34,12 @@ class InMemoryRelaySessionStorePersistenceTest {
                 50,
                 persistenceFile.toString(),
                 "test-relay-issuer",
-                "test-relay-secret"
+                "test-relay-secret",
+                "",
+                "",
+                "",
+                "",
+                ""
         );
         ObjectMapper objectMapper = Jackson2ObjectMapperBuilder.json().build();
 
@@ -149,7 +154,12 @@ class InMemoryRelaySessionStorePersistenceTest {
                 50,
                 persistenceFile.toString(),
                 "test-relay-issuer",
-                "test-relay-secret"
+                "test-relay-secret",
+                "",
+                "",
+                "",
+                "",
+                ""
         );
         ObjectMapper objectMapper = Jackson2ObjectMapperBuilder.json().build();
 
@@ -176,7 +186,12 @@ class InMemoryRelaySessionStorePersistenceTest {
                         50,
                         tempDir.resolve("relay-admin-imported.json").toString(),
                         "test-relay-issuer",
-                        "test-relay-secret"
+                        "test-relay-secret",
+                        "",
+                        "",
+                        "",
+                        "",
+                        ""
                 ),
                 objectMapper
         );
@@ -256,7 +271,12 @@ class InMemoryRelaySessionStorePersistenceTest {
                 50,
                 persistenceFile.toString(),
                 "test-relay-issuer",
-                "test-relay-secret"
+                "test-relay-secret",
+                "",
+                "",
+                "",
+                "",
+                ""
         );
         ObjectMapper objectMapper = Jackson2ObjectMapperBuilder.json().build();
 

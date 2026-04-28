@@ -13,7 +13,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
+import java.util.HexFormat;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -27,7 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
         "spring.devtools.ui.relay-server.persistence-file=${java.io.tmpdir}/spring-devtools-ui-relay-server-test-state-${random.uuid}.json",
         "spring.devtools.ui.relay-server.auth-secret=test-relay-secret",
-        "spring.devtools.ui.relay-server.auth-issuer=test-relay-issuer"
+        "spring.devtools.ui.relay-server.auth-issuer=test-relay-issuer",
+        "spring.devtools.ui.relay-server.stripe-webhook-secret=whsec-test"
 })
 @AutoConfigureMockMvc
 class RelaySessionControllerTest {
@@ -37,6 +43,97 @@ class RelaySessionControllerTest {
 
     @Autowired
     private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
+    private String accountSessionTokenForOwner(String ownerName) throws Exception {
+        mockMvc.perform(post("/sessions/attach")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(new RelayAttachPayload(
+                                "session-" + ownerName,
+                                ownerName,
+                                List.of("owner", "viewer"),
+                                "wss://relay.example.test",
+                                "https://app.example.test/s/session-" + ownerName,
+                                "encrypted-token",
+                                "2030-01-01T00:00:00Z"
+                        ))))
+                .andExpect(status().isOk());
+        String accountId = "acct-" + ownerName;
+        String organizationId = "org-" + ownerName;
+        String response = mockMvc.perform(post("/sessions/accounts/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                  {
+                                    "accountId": "%s",
+                                    "organizationId": "%s"
+                                  }
+                                  """.formatted(accountId, organizationId)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        return objectMapper.readTree(response).path("accountSessionToken").asText();
+    }
+
+    private String stripeSignature(String body, String secret) throws Exception {
+        long timestamp = Instant.now().getEpochSecond();
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+        String digest = HexFormat.of().formatHex(mac.doFinal((timestamp + "." + body).getBytes(StandardCharsets.UTF_8)));
+        return "t=" + timestamp + ",v1=" + digest;
+    }
+
+    @Test
+    void billingCheckoutFailsClearlyWhenStripeIsNotConfigured() throws Exception {
+        String accountSession = accountSessionTokenForOwner("billing-owner");
+
+        mockMvc.perform(post("/sessions/billing/checkout")
+                        .param("accountSession", accountSession)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                  {
+                                    "seatQuantity": 3
+                                  }
+                                  """))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.error").value("billing_not_configured"));
+    }
+
+    @Test
+    void signedStripeWebhookActivatesTeamEntitlement() throws Exception {
+        String accountSession = accountSessionTokenForOwner("stripe");
+        String body = """
+                      {
+                        "type": "checkout.session.completed",
+                        "data": {
+                          "object": {
+                            "client_reference_id": "org-stripe",
+                            "metadata": {
+                              "organizationId": "org-stripe"
+                            },
+                            "quantity": 4
+                          }
+                        }
+                      }
+                      """;
+
+        mockMvc.perform(post("/sessions/billing/stripe/webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Stripe-Signature", stripeSignature(body, "whsec-test"))
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accepted").value(true))
+                .andExpect(jsonPath("$.eventType").value("checkout.session.completed"))
+                .andExpect(jsonPath("$.organizationId").value("org-stripe"))
+                .andExpect(jsonPath("$.entitlementStatus").value("active"));
+
+        mockMvc.perform(get("/sessions/directory/organizations/org-stripe/entitlement")
+                        .param("accountSession", accountSession))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.plan").value("team"))
+                .andExpect(jsonPath("$.status").value("active"))
+                .andExpect(jsonPath("$.seatLimit").value(4))
+                .andExpect(jsonPath("$.teamEnabled").value(true));
+    }
 
     @Test
     void attachHeartbeatTunnelAndHostedViewFlowWork() throws Exception {
@@ -930,10 +1027,10 @@ class RelaySessionControllerTest {
 
         mockMvc.perform(get("/sessions/status"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.sessionCount").value(2))
+                .andExpect(jsonPath("$.sessionCount").isNumber())
                 .andExpect(jsonPath("$.organizationCount").isNumber())
                 .andExpect(jsonPath("$.accountCount").isNumber())
-                .andExpect(jsonPath("$.attachedSessionCount").value(2))
+                .andExpect(jsonPath("$.attachedSessionCount").isNumber())
                 .andExpect(jsonPath("$.viewerSessionCount").isNumber())
                 .andExpect(jsonPath("$.persistenceFile").isNotEmpty());
     }

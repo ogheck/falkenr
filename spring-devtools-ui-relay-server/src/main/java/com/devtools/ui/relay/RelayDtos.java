@@ -229,6 +229,28 @@ record RelayEntitlementResponse(
 ) {
 }
 
+record RelayBillingCheckoutRequest(
+        Integer seatQuantity
+) {
+}
+
+record RelayBillingCheckoutResponse(
+        String provider,
+        String checkoutSessionId,
+        String checkoutUrl,
+        String organizationId,
+        int seatQuantity
+) {
+}
+
+record RelayBillingWebhookResponse(
+        boolean accepted,
+        String eventType,
+        String organizationId,
+        String entitlementStatus
+) {
+}
+
 record RelayQuotaResponse(
         String organizationId,
         int maxSessions,

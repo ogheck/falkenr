@@ -31,6 +31,12 @@ class RelayErrorHandler {
         return Map.of("error", "quota_exceeded", "message", exception.getMessage());
     }
 
+    @ExceptionHandler(BillingNotConfiguredException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    Map<String, String> handleBillingNotConfigured(BillingNotConfiguredException exception) {
+        return Map.of("error", "billing_not_configured", "message", exception.getMessage());
+    }
+
     @ExceptionHandler(NoSuchElementException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     Map<String, String> handleNotFound(NoSuchElementException exception) {

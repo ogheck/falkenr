@@ -11,7 +11,12 @@ public record RelayServerProperties(
         int hostedHistoryLimit,
         String persistenceFile,
         String authIssuer,
-        String authSecret
+        String authSecret,
+        String stripeApiKey,
+        String stripeTeamPriceId,
+        String stripeWebhookSecret,
+        String billingSuccessUrl,
+        String billingCancelUrl
 ) {
 
     public RelayServerProperties {
@@ -21,6 +26,11 @@ public record RelayServerProperties(
         persistenceFile = normalizePersistenceFile(persistenceFile);
         authIssuer = normalizeIssuer(authIssuer);
         authSecret = normalizeSecret(authSecret);
+        stripeApiKey = normalizeBlank(stripeApiKey);
+        stripeTeamPriceId = normalizeBlank(stripeTeamPriceId);
+        stripeWebhookSecret = normalizeBlank(stripeWebhookSecret);
+        billingSuccessUrl = normalizeBillingUrl(billingSuccessUrl, publicBaseUrl + "/app?billing=success");
+        billingCancelUrl = normalizeBillingUrl(billingCancelUrl, publicBaseUrl + "/pricing?billing=cancelled");
     }
 
     private static String normalize(String value) {
@@ -50,5 +60,13 @@ public record RelayServerProperties(
         }
         // Dev default only. Paid/shared deployments must supply a real secret.
         return "dev-insecure-secret-change-me";
+    }
+
+    private static String normalizeBlank(String value) {
+        return value == null || value.isBlank() ? "" : value.trim();
+    }
+
+    private static String normalizeBillingUrl(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value.trim();
     }
 }
