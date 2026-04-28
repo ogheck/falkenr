@@ -269,6 +269,10 @@
     <aside class="panel">
       <h2>Workspace context</h2>
       <div class="stack" id="workspace-details"></div>
+      <h3>Billing</h3>
+      <div class="stack" id="billing-panel">
+        <div class="empty">Load a workspace to manage billing.</div>
+      </div>
       <h3>Plan controls</h3>
       <div class="stack">
         <div class="inline-actions">
@@ -352,6 +356,7 @@
   const dashboardEntitlement = document.getElementById('dashboard-entitlement');
   const dashboardOrg = document.getElementById('dashboard-org');
   const workspaceDetails = document.getElementById('workspace-details');
+  const billingPanel = document.getElementById('billing-panel');
   const accountsList = document.getElementById('accounts-list');
   const sessionsList = document.getElementById('sessions-list');
   const sessionStats = document.getElementById('session-stats');
@@ -887,6 +892,62 @@
     }));
   }
 
+  function renderBilling(payload, accountSession) {
+    const role = payload.account?.role || '';
+    const entitlement = payload.entitlement || {};
+    const teamEnabled = entitlement.teamEnabled === true;
+    const seatLimit = Number(entitlement.seatLimit || 1);
+
+    if (role.toLowerCase() !== 'owner') {
+      billingPanel.innerHTML = '<div class="empty">Billing is available to organization owners.</div>';
+      return;
+    }
+
+    billingPanel.innerHTML = `
+      <div class="${teamEnabled ? 'success' : 'empty'}">
+        ${teamEnabled
+          ? `Team plan is active for ${seatLimit} seat${seatLimit === 1 ? '' : 's'}.`
+          : 'Upgrade to Team to unlock hosted collaboration for this workspace.'}
+      </div>
+      <div class="inline-actions">
+        <input id="billing-seat-quantity" type="text" inputmode="numeric" placeholder="Seats" value="${Math.max(1, seatLimit || 1)}">
+        <button id="billing-upgrade" type="button">${teamEnabled ? 'Update Team seats' : 'Upgrade to Team'}</button>
+      </div>
+      <div id="billing-feedback"></div>
+    `;
+
+    const seatQuantity = billingPanel.querySelector('#billing-seat-quantity');
+    const upgrade = billingPanel.querySelector('#billing-upgrade');
+    const feedback = billingPanel.querySelector('#billing-feedback');
+    upgrade.addEventListener('click', async () => {
+      try {
+        feedback.innerHTML = '';
+        if (!accountSession) {
+          feedback.innerHTML = '<div class="error">Missing account session.</div>';
+          return;
+        }
+        const seats = Math.max(1, Number(seatQuantity.value || '1'));
+        feedback.innerHTML = '<div class="empty">Creating Stripe Checkout session...</div>';
+        const response = await fetch(buildApiUrl('/sessions/billing/checkout', { accountSession }), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ seatQuantity: seats }),
+        });
+        if (!response.ok) {
+          const body = await response.text();
+          throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+        }
+        const checkout = await response.json();
+        if (!checkout.checkoutUrl) {
+          throw new Error('Stripe checkout did not return a checkout URL.');
+        }
+        window.location.assign(checkout.checkoutUrl);
+      } catch (error) {
+        feedback.innerHTML = `<div class="error">${error.message}</div>`;
+      }
+    });
+  }
+
   async function load(accountSession) {
     updateShareLink(accountSession);
     if (!accountSession) {
@@ -894,6 +955,7 @@
       dashboardEntitlement.textContent = 'Entitlement: n/a';
       dashboardOrg.textContent = 'Organization: n/a';
       workspaceDetails.innerHTML = '<div class="empty">If you are signed in via GitHub, the dashboard will load automatically. Otherwise paste or create a relay account session token above.</div>';
+      billingPanel.innerHTML = '<div class="empty">Load a workspace to manage billing.</div>';
     }
 
     try {
@@ -922,6 +984,7 @@
         ['Public relay URL', payload.status?.publicBaseUrl],
       ]));
       const projects = Array.isArray(payload.projects) ? payload.projects : [];
+      renderBilling(payload, accountSession);
       renderProjects(projects);
       renderAccounts(Array.isArray(payload.organizationAccounts) ? payload.organizationAccounts : []);
       renderSessions(payload, accountSession, projects);
@@ -943,6 +1006,7 @@
     } catch (error) {
       dashboardStatus.textContent = 'Failed to load relay workspace';
       workspaceDetails.innerHTML = `<div class="error">${error.message}</div>`;
+      billingPanel.innerHTML = '<div class="error">Could not load billing controls.</div>';
       accountsList.innerHTML = '<div class="error">Could not load organization accounts.</div>';
       sessionsList.innerHTML = '<div class="error">Could not load hosted sessions.</div>';
       sessionStats.innerHTML = '';
