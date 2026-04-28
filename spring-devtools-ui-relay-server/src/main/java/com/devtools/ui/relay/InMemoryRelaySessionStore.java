@@ -637,6 +637,8 @@ class InMemoryRelaySessionStore {
     synchronized RelayHostedDashboardResponse dashboard(String accountSessionToken) {
         RelayAccountDescriptor account = requireDashboardAccount(accountSessionToken);
         RelayOrganizationDescriptor organization = requireOrganization(account.organizationId());
+        recordAudit("relay.dashboard.loaded", account.displayName(), "hosted dashboard loaded", organization.organizationId(), null);
+        saveState();
         RelayEntitlementResponse entitlement = entitlementFor(organization.organizationId()).response(organization.organizationId());
         RelayQuotaResponse quota = quotaFor(organization.organizationId());
         List<RelayProjectDescriptor> organizationProjects = projects.values().stream()
@@ -787,6 +789,14 @@ class InMemoryRelaySessionStore {
         int auditEventCount = (int) auditEvents.stream()
                 .filter(event -> organizationId.equals(event.organizationId()))
                 .count();
+        List<RelayActivationMetric> activationFunnel = List.of(
+                activationMetric(organizationId, "relay_attach", "Relay attached", "relay.session.attach"),
+                activationMetric(organizationId, "dashboard_loaded", "Dashboard loaded", "relay.dashboard.loaded"),
+                activationMetric(organizationId, "share_created", "Share invitation created", "relay.invitation.created"),
+                activationMetric(organizationId, "viewer_joined", "Viewer joined", "relay.viewer-session.created"),
+                activationMetric(organizationId, "replay_prepared", "Replay prepared", "relay.request.replay.prepared"),
+                activationMetric(organizationId, "checkout_started", "Checkout started", "relay.billing.checkout.started")
+        );
 
         List<String> topActors = actorCounts.entrySet().stream()
                 .sorted(java.util.Map.Entry.<String, Long>comparingByValue().reversed()
@@ -806,6 +816,7 @@ class InMemoryRelaySessionStore {
                 debugNoteCount,
                 recordingCount,
                 auditEventCount,
+                activationFunnel,
                 topActors,
                 replayTitles.stream().limit(8).toList()
         );
@@ -896,6 +907,13 @@ class InMemoryRelaySessionStore {
         return upsertEntitlement(organizationId, request);
     }
 
+    synchronized void billingRecordCheckoutStarted(String organizationId, String accountId, int seatQuantity) {
+        RelayAccountDescriptor account = accounts.get(accountId);
+        String actor = account == null ? accountId : account.displayName();
+        recordAudit("relay.billing.checkout.started", actor, "checkout started for " + seatQuantity + " seat(s)", organizationId, null);
+        saveState();
+    }
+
     synchronized RelayCloudRequestReplayResponse cloudRequestReplay(String accountSessionToken, String sessionId, String requestId) {
         RelayAccountDescriptor account = requireDashboardAccount(accountSessionToken);
         RelaySessionRecord record = requireSession(sessionId);
@@ -907,6 +925,8 @@ class InMemoryRelaySessionStore {
         boolean replayableBody = !request.binaryBody() && !request.bodyTruncated();
         String bodyPreview = replayableBody ? nullToEmpty(request.body()) : "[body omitted: binary or truncated]";
         String curlCommand = replayableCurlCommand(request, replayableBody);
+        recordAudit("relay.request.replay.prepared", account.displayName(), "prepared replay for request " + requestId, record.organizationId, sessionId);
+        saveState();
         return new RelayCloudRequestReplayResponse(
                 sessionId,
                 request.requestId(),
@@ -1142,6 +1162,14 @@ class InMemoryRelaySessionStore {
                 .filter(event -> organizationId == null || organizationId.isBlank() || organizationId.equals(event.organizationId()))
                 .filter(event -> sessionId == null || sessionId.isBlank() || sessionId.equals(event.sessionId()))
                 .toList();
+    }
+
+    private RelayActivationMetric activationMetric(String organizationId, String key, String label, String eventType) {
+        long count = auditEvents.stream()
+                .filter(event -> organizationId.equals(event.organizationId()))
+                .filter(event -> eventType.equals(event.eventType()))
+                .count();
+        return new RelayActivationMetric(key, label, count);
     }
 
     private HostedSessionViewDescriptor currentize(HostedSessionViewDescriptor view) {

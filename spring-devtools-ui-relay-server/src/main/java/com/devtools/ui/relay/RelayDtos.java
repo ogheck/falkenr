@@ -336,8 +336,16 @@ record RelayUsageAnalyticsResponse(
         int debugNoteCount,
         int recordingCount,
         int auditEventCount,
+        List<RelayActivationMetric> activationFunnel,
         List<String> topActors,
         List<String> recentReplayTitles
+) {
+}
+
+record RelayActivationMetric(
+        String key,
+        String label,
+        long count
 ) {
 }
 

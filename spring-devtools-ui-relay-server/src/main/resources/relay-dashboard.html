@@ -1047,6 +1047,7 @@
         ['Active viewers', analytics.activeViewerSessionCount ?? 0],
       ]));
       analyticsDetails.replaceChildren(...renderRows([
+        ...(Array.isArray(analytics.activationFunnel) ? analytics.activationFunnel.map((step) => [step.label, step.count ?? 0]) : []),
         ['Attached sessions', analytics.attachedSessionCount ?? 0],
         ['Request artifacts', analytics.requestArtifactCount ?? 0],
         ['Replay entries', analytics.replayEntryCount ?? 0],

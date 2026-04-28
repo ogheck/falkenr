@@ -79,6 +79,7 @@ class RelayBillingController {
         }
 
         JsonNode json = objectMapper.readTree(response.body());
+        sessionStore.billingRecordCheckoutStarted(owner.organizationId(), owner.accountId(), seatQuantity);
         return new RelayBillingCheckoutResponse(
                 "stripe",
                 json.path("id").asText(),

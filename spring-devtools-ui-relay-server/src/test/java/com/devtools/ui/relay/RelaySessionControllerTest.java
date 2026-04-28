@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.HexFormat;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -604,6 +605,11 @@ class RelaySessionControllerTest {
                 .andExpect(jsonPath("$.replayEntryCount").value(2))
                 .andExpect(jsonPath("$.debugNoteCount").value(1))
                 .andExpect(jsonPath("$.recordingCount").value(1))
+                .andExpect(jsonPath("$.activationFunnel[0].key").value("relay_attach"))
+                .andExpect(jsonPath("$.activationFunnel[0].count").value(1))
+                .andExpect(jsonPath("$.activationFunnel[1].key").value("dashboard_loaded"))
+                .andExpect(jsonPath("$.activationFunnel[1].count").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.activationFunnel[2].key").value("share_created"))
                 .andExpect(jsonPath("$.topActors[0]").value(containsString("owner")))
                 .andExpect(jsonPath("$.recentReplayTitles[0]").value("POST /users"));
 
@@ -889,6 +895,12 @@ class RelaySessionControllerTest {
                 .andExpect(jsonPath("$.curlCommand").value(containsString("curl -i -X")))
                 .andExpect(jsonPath("$.curlCommand").value(containsString("/users")))
                 .andExpect(jsonPath("$.replayHint").value(containsString("the relay does not execute customer traffic")));
+
+        mockMvc.perform(get("/sessions/dashboard/analytics")
+                        .queryParam("accountSession", invitedLogin.accountSessionToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activationFunnel[4].key").value("replay_prepared"))
+                .andExpect(jsonPath("$.activationFunnel[4].count").value(greaterThanOrEqualTo(1)));
 
         mockMvc.perform(post("/sessions/dashboard/sessions/{sessionId}/requests/{requestId}/replay", "missing", "request-9")
                         .queryParam("accountSession", invitedLogin.accountSessionToken()))
