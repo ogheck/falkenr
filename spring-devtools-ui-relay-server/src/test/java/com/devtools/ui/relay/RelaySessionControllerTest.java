@@ -154,6 +154,57 @@ class RelaySessionControllerTest {
     }
 
     @Test
+    void stripeSubscriptionStatusMapsToTrialLifecycleEntitlement() throws Exception {
+        String accountSession = accountSessionTokenForOwner("stripe-lifecycle");
+        String trialing = """
+                          {
+                            "type": "customer.subscription.updated",
+                            "data": {
+                              "object": {
+                                "id": "sub_trialing",
+                                "customer": "cus_lifecycle",
+                                "status": "trialing",
+                                "quantity": 2,
+                                "metadata": {
+                                  "organizationId": "org-stripe-lifecycle"
+                                }
+                              }
+                            }
+                          }
+                          """;
+
+        mockMvc.perform(post("/sessions/billing/stripe/webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Stripe-Signature", stripeSignature(trialing, "whsec-test"))
+                        .content(trialing))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.entitlementStatus").value("trialing"));
+
+        mockMvc.perform(get("/sessions/directory/organizations/org-stripe-lifecycle/entitlement")
+                        .param("accountSession", accountSession))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("trialing"))
+                .andExpect(jsonPath("$.teamEnabled").value(true));
+
+        String pastDue = trialing
+                .replace("sub_trialing", "sub_past_due")
+                .replace("\"trialing\"", "\"past_due\"");
+
+        mockMvc.perform(post("/sessions/billing/stripe/webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Stripe-Signature", stripeSignature(pastDue, "whsec-test"))
+                        .content(pastDue))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.entitlementStatus").value("past_due"));
+
+        mockMvc.perform(get("/sessions/directory/organizations/org-stripe-lifecycle/entitlement")
+                        .param("accountSession", accountSession))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("past_due"))
+                .andExpect(jsonPath("$.teamEnabled").value(false));
+    }
+
+    @Test
     void attachHeartbeatTunnelAndHostedViewFlowWork() throws Exception {
         mockMvc.perform(get("/sessions/status"))
                 .andExpect(status().isOk())
@@ -427,11 +478,12 @@ class RelaySessionControllerTest {
                         .content("""
                                 {
                                   "plan": "team",
-                                  "status": "active",
+                                  "status": "trialing",
                                   "seatLimit": 10
                                 }
                                 """))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("trialing"))
                 .andExpect(jsonPath("$.teamEnabled").value(true));
 
         String invitationResponse = mockMvc.perform(post("/sessions/session-123/invitations")

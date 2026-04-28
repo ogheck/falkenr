@@ -139,6 +139,7 @@ class RelayBillingController {
                 || "customer.subscription.created".equals(type)
                 || "customer.subscription.updated".equals(type)) {
             int seats = Math.max(1, object.path("quantity").asInt(1));
+            String status = entitlementStatusFromStripe(type, object);
             sessionStore.billingUpdateStripeLink(
                     organizationId,
                     customerIdFrom(object),
@@ -146,7 +147,7 @@ class RelayBillingController {
             );
             RelayEntitlementResponse entitlement = sessionStore.billingUpdateEntitlement(
                     organizationId,
-                    new RelayEntitlementRequest("team", "active", seats)
+                    new RelayEntitlementRequest("team", status, seats)
             );
             return new RelayBillingWebhookResponse(true, type, organizationId, entitlement.status());
         }
@@ -226,6 +227,21 @@ class RelayBillingController {
             return subscription.asText("").trim();
         }
         return subscription.path("id").asText("").trim();
+    }
+
+    private String entitlementStatusFromStripe(String eventType, JsonNode object) {
+        String stripeStatus = object.path("status").asText("").trim();
+        if (stripeStatus.isBlank() && "checkout.session.completed".equals(eventType)) {
+            return "active";
+        }
+        return switch (stripeStatus) {
+            case "trialing" -> "trialing";
+            case "active" -> "active";
+            case "past_due", "unpaid" -> "past_due";
+            case "canceled" -> "canceled";
+            case "incomplete_expired" -> "expired";
+            default -> "inactive";
+        };
     }
 
     private void verifyStripeSignature(String body, String signature) throws Exception {

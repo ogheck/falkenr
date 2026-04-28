@@ -543,8 +543,8 @@ class InMemoryRelaySessionStore {
 
     synchronized RelayEntitlementResponse upsertEntitlement(String organizationId, RelayEntitlementRequest request) {
         requireOrganization(organizationId);
-        String plan = request.plan() == null || request.plan().isBlank() ? "free" : request.plan().trim();
-        String status = request.status() == null || request.status().isBlank() ? "inactive" : request.status().trim();
+        String plan = normalizePlan(request.plan());
+        String status = normalizeEntitlementStatus(request.status());
         int seatLimit = request.seatLimit() == null || request.seatLimit() < 0 ? 0 : request.seatLimit();
         RelayEntitlement entitlement = new RelayEntitlement(plan, status, seatLimit);
         entitlements.put(organizationId, entitlement);
@@ -1190,10 +1190,26 @@ class InMemoryRelaySessionStore {
         return entitlements.getOrDefault(organizationId, RelayEntitlement.alphaTrial());
     }
 
+    private String normalizePlan(String plan) {
+        return plan == null || plan.isBlank() ? "free" : plan.trim();
+    }
+
+    private String normalizeEntitlementStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return "inactive";
+        }
+        String normalized = status.trim().toLowerCase().replace("-", "_");
+        return switch (normalized) {
+            case "trialing", "active", "past_due", "canceled", "expired", "inactive" -> normalized;
+            default -> "inactive";
+        };
+    }
+
     private void ensureTeamEntitlement(String organizationId) {
         RelayEntitlement entitlement = entitlementFor(organizationId);
         if (!entitlement.teamEnabled()) {
-            throw new PlanRequiredException("Hosted collaboration requires an active Team plan for organization " + organizationId);
+            throw new PlanRequiredException("Hosted collaboration requires a trialing or active Team plan for organization " + organizationId
+                    + " (current status: " + entitlement.status() + ")");
         }
     }
 
@@ -1869,7 +1885,9 @@ class InMemoryRelaySessionStore {
         }
 
         boolean teamEnabled() {
-            return ("team".equals(plan) || "alpha-trial".equals(plan)) && "active".equals(status) && seatLimit > 0;
+            return ("team".equals(plan) || "alpha-trial".equals(plan))
+                    && ("trialing".equals(status) || "active".equals(status))
+                    && seatLimit > 0;
         }
 
         RelayEntitlementResponse response(String organizationId) {

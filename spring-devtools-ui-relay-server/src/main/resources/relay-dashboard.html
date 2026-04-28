@@ -282,7 +282,11 @@
             <option value="free">free</option>
           </select>
           <select id="entitlement-status">
+            <option value="trialing">trialing</option>
             <option value="active">active</option>
+            <option value="past_due">past_due</option>
+            <option value="canceled">canceled</option>
+            <option value="expired">expired</option>
             <option value="inactive">inactive</option>
           </select>
           <input id="entitlement-seat-limit" type="text" placeholder="Seat limit">
@@ -897,6 +901,7 @@
     const entitlement = payload.entitlement || {};
     const teamEnabled = entitlement.teamEnabled === true;
     const seatLimit = Number(entitlement.seatLimit || 1);
+    const status = entitlement.status || 'inactive';
 
     if (role.toLowerCase() !== 'owner') {
       billingPanel.innerHTML = '<div class="empty">Billing is available to organization owners.</div>';
@@ -906,8 +911,8 @@
     billingPanel.innerHTML = `
       <div class="${teamEnabled ? 'success' : 'empty'}">
         ${teamEnabled
-          ? `Team plan is active for ${seatLimit} seat${seatLimit === 1 ? '' : 's'}.`
-          : 'Upgrade to Team to unlock hosted collaboration for this workspace.'}
+          ? `Team plan is ${status} for ${seatLimit} seat${seatLimit === 1 ? '' : 's'}.`
+          : `Upgrade to Team to unlock hosted collaboration for this workspace. Current status: ${status}.`}
       </div>
       <div class="inline-actions">
         <input id="billing-seat-quantity" type="text" inputmode="numeric" placeholder="Seats" value="${Math.max(1, seatLimit || 1)}">
