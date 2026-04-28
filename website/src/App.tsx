@@ -12,10 +12,10 @@ const statusItems = [
   { label: "Local debugging", value: "complete" },
   { label: "Runtime visibility", value: "complete" },
   { label: "Developer power tools", value: "complete" },
-  { label: "Team collaboration", value: "alpha (live)" },
-  { label: "Staging + persistence", value: "in progress" },
-  { label: "Enterprise controls", value: "early" },
-  { label: "Cloud platform", value: "planned" },
+  { label: "Hosted collaboration", value: "paid beta" },
+  { label: "Persistent history", value: "planned" },
+  { label: "Enterprise controls", value: "planned" },
+  { label: "Production use", value: "not supported" },
 ];
 
 const FEATURES = {
@@ -45,7 +45,7 @@ const FEATURES = {
 const CAL_LINK = (import.meta as any).env?.VITE_BOOK_CALL_URL as string | undefined;
 const EARLY_ACCESS_ENDPOINT = ((import.meta as any).env?.VITE_EARLY_ACCESS_ENDPOINT
   || ((import.meta as any).env?.PROD ? "/api/early-access" : undefined)) as string | undefined;
-const EARLY_ACCESS_EMAIL = "ogheck@gmail.com";
+const EARLY_ACCESS_EMAIL = INFO_EMAIL;
 
 function mailto(subject: string, body?: string, email = EARLY_ACCESS_EMAIL) {
   const encoded = encodeURIComponent(subject);
@@ -105,10 +105,10 @@ function Shell({ children }: { children: React.ReactNode }) {
             <NavLink href="/early-access">Early access</NavLink>
             <NavLink href="/pricing">Pricing</NavLink>
             <a
-              href="/app"
+              href={HOSTED_APP_URL}
               className="inline-flex items-center justify-center border border-ink bg-ink px-4 py-2 text-xs uppercase tracking-[0.22em] text-paper transition hover:bg-pine"
             >
-              View demo
+              Open app
             </a>
           </div>
         </div>
@@ -133,12 +133,12 @@ function HomePage() {
           </div>
           <div className="space-y-4">
             <p className="font-display text-[clamp(3rem,8.6vw,6.6rem)] leading-[0.92] tracking-[-0.05em] text-ink">
-              Debug your Spring Boot app locally — and let your team see exactly what you see.
+              Debug Spring Boot issues with the exact runtime state in front of you.
             </p>
             <p className="max-w-2xl text-base leading-7 text-slate sm:text-lg">
               Falkenr gives you a zero-config runtime dashboard at
               <span className="mx-2 inline-block border-b border-ink/20 font-mono text-sm text-ink">/_dev</span>
-              then lets you securely share that exact state with others. No staging, no repro steps, no guesswork.
+              then lets you share the same debugging context with teammates when a bug needs more than screenshots and logs.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -155,10 +155,10 @@ function HomePage() {
               Quickstart
             </a>
             <a
-              href="/app"
+              href={HOSTED_APP_URL}
               className="inline-flex items-center justify-center border border-ink/20 px-5 py-3 text-sm uppercase tracking-[0.22em] text-ink transition hover:border-ink"
             >
-              View demo
+              Open app
             </a>
           </div>
         </div>
@@ -223,15 +223,15 @@ function HomePage() {
             },
             {
               title: "2. Share instantly",
-              body: "Open a secure tunnel and generate a link. No firewall changes. No deployment.",
+              body: "Attach to the hosted relay and invite a teammate. No staging deploy and no firewall work.",
             },
             {
               title: "3. Collaborate",
-              body: "Teammates open the link and see exactly what you see: requests, logs, runtime state, live.",
+              body: "Teammates inspect the same requests, logs, config, and replay artifacts from a hosted session.",
             },
             {
-              title: "4. Scale (coming)",
-              body: "Persist sessions, compare environments, and manage teams centrally.",
+              title: "4. Keep the trail",
+              body: "Prepare replay artifacts and session context so someone else can pick up the investigation later.",
             },
           ].map((step) => (
             <div key={step.title} className="border border-ink/15 bg-white/60 p-5">
@@ -270,7 +270,7 @@ function HomePage() {
             <div className="space-y-4 text-sm leading-6 text-slate">
               <div>
                 <div className="font-medium text-ink">Zero setup</div>
-                <div>No database. No services. No config. Just add the dependency.</div>
+                <div>No database or local service required for the free dashboard. Just add the dependency.</div>
               </div>
               <div>
                 <div className="font-medium text-ink">Local-first</div>
@@ -315,7 +315,7 @@ function HomePage() {
         </div>
 
         <div className="border border-ink/15 bg-white/60 p-5 lg:col-start-2 lg:col-span-2">
-          <div className="text-[11px] uppercase tracking-[0.28em] text-ember">Collaboration (alpha)</div>
+          <div className="text-[11px] uppercase tracking-[0.28em] text-ember">Hosted collaboration</div>
           <ul className="mt-4 grid gap-2 text-sm text-slate sm:grid-cols-2">
             {FEATURES.collaboration.map((item) => <li key={item}>• {item}</li>)}
           </ul>
@@ -330,8 +330,8 @@ function HomePage() {
               Built and running.
             </h2>
             <p className="mt-4 text-sm leading-6 text-slate">
-              Live relay deployed (alpha), secure HTTPS via Cloudflare tunnel, cross-machine debugging working today,
-              hosted viewer and session sharing implemented.
+              Local runtime visibility, hosted Team checkout, share links, invitations, and the hosted viewer are live.
+              Persistent history and enterprise controls remain planned.
             </p>
           </div>
           <div className="border border-ink/15 bg-fog/90 p-5">
@@ -360,7 +360,7 @@ function HomePage() {
             { label: "During development", note: "Understand your app instantly without adding tooling." },
             { label: "During debugging", note: "Capture the exact request and state that caused the issue." },
             { label: "Across teammates", note: "Share a live debugging session instead of writing repro steps." },
-            { label: "Across time zones", note: "Leave behind a session someone else can inspect later." },
+            { label: "Across time zones", note: "Prepare session context someone else can inspect later." },
           ].map((item) => (
             <div key={item.label} className="border border-ink/15 bg-white/60 p-5">
               <div className="text-lg font-medium tracking-[-0.02em] text-ink">{item.label}</div>
@@ -378,8 +378,8 @@ function HomePage() {
               Start debugging and sharing in minutes.
             </h2>
             <p className="max-w-2xl text-sm leading-6 text-sand">
-              Free: local dashboard for individual developers. Team beta: hosted collaboration and shared debugging
-              sessions. Pro and Enterprise remain scoped for larger rollout needs.
+              Free: local dashboard for individual developers. Team beta: hosted collaboration and shared debugging.
+              Pro and Enterprise stay planned until the Team workflow is proven.
             </p>
           </div>
           <div className="flex flex-col gap-3 self-end">
@@ -455,7 +455,7 @@ function QuickstartPage() {
           },
           {
             title: "4. Share only when needed",
-            body: "For team debugging, request early access and connect the local dashboard to the hosted relay.",
+            body: "For team debugging, open the hosted app, attach to the relay, and invite a teammate into the same session.",
           },
         ].map((step) => (
           <div key={step.title} className="border border-ink/15 bg-white/60 p-5">
@@ -473,10 +473,10 @@ function QuickstartPage() {
           Open GitHub
         </a>
         <a
-          href="/early-access"
+          href={HOSTED_APP_URL}
           className="inline-flex items-center justify-center border border-ink/20 px-5 py-3 text-sm uppercase tracking-[0.22em] text-ink transition hover:border-ink"
         >
-          Request hosted access
+          Open hosted app
         </a>
       </div>
     </section>
@@ -544,25 +544,33 @@ function EarlyAccessPage() {
         <div className="inline-flex items-center gap-3 border border-ink/15 bg-white/50 px-3 py-2 text-[11px] uppercase tracking-[0.28em] text-slate">
           Early access
           <span className="h-2 w-2 rounded-full bg-ember" />
-          early access users
+          paid beta
         </div>
         <h1 className="font-display text-[clamp(2.6rem,7vw,5rem)] leading-[0.95] tracking-[-0.05em] text-ink">
           Stop sending repro steps. Share your debugging session instead.
         </h1>
         <p className="max-w-2xl text-base leading-7 text-slate sm:text-lg">
-          Falkenr lets you share a live Spring Boot runtime with your team, requests, logs, and state, through a single link.
-          We’re looking for 5–10 engineering teams to test this in real workflows.
+          Falkenr lets you share a live Spring Boot debugging session with your team, including requests, logs, config,
+          and replay context. We are onboarding a small number of teams for paid beta.
         </p>
         <div className="flex flex-wrap gap-3">
           <a
-            href="mailto:info@falkenr.com?subject=Falkenr%20early%20access%20request&body=Hi%20-%20I'm%20interested%20in%20early%20access%20to%20Falkenr."
+            href={mailto(
+              "Falkenr beta access request",
+              "Hi - I am interested in beta access to Falkenr.",
+              INFO_EMAIL
+            )}
             className="inline-flex items-center justify-center border border-ink bg-ink px-5 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:bg-pine"
           >
-            Request early access
+            Request beta access
           </a>
 
           <a
-            href="mailto:info@falkenr.com?subject=Falkenr%2015-min%20call&body=Hi%20-%20I'd%20like%20to%20schedule%20a%2015-minute%20call%20about%20Falkenr."
+            href={mailto(
+              "Falkenr 15-minute call",
+              "Hi - I would like to schedule a 15-minute call about Falkenr.",
+              INFO_EMAIL
+            )}
             className="inline-flex items-center justify-center border border-ink/20 px-5 py-3 text-sm uppercase tracking-[0.22em] text-ink transition hover:border-ink"
           >
             Book a 15-min call
@@ -591,8 +599,8 @@ function EarlyAccessPage() {
         <div className="border border-ink/15 bg-fog/90 p-5">
           <div className="text-[11px] uppercase tracking-[0.28em] text-slate">What if you could just send a link?</div>
           <p className="mt-4 text-sm leading-6 text-slate">
-            Your teammate opens the link and immediately sees the exact request that failed, logs at that moment,
-            runtime config, and the actual system state. No staging deploy. No reproduction steps.
+            Your teammate opens the hosted session and sees the request, logs, config, and replay context needed to
+            understand the issue. No staging deploy. No reproduction steps.
           </p>
           <div className="mt-5 border border-ink/15 bg-white/60 p-4 text-sm text-slate">
             1. Hit an issue locally
@@ -612,7 +620,7 @@ function EarlyAccessPage() {
           <div className="mt-4 grid gap-2 text-sm text-slate">
             <div>✔ Teams of 3–20 engineers</div>
             <div>✔ Backend-heavy workflows (Spring Boot)</div>
-            <div>✔ Frequent debugging across people or environments</div>
+            <div>✔ Frequent debugging across people or machines</div>
             <div>✔ Async or distributed teams</div>
           </div>
           <div className="mt-6 text-[11px] uppercase tracking-[0.28em] text-slate">Not a fit if</div>
@@ -628,12 +636,12 @@ function EarlyAccessPage() {
           <div className="mt-4 grid gap-2 text-sm text-slate">
             <div>• Local debugging: complete</div>
             <div>• Runtime visibility: complete</div>
-            <div>• Team sharing: working (alpha)</div>
+            <div>• Hosted Team sharing: paid beta</div>
             <div>• Hosted viewer: live</div>
             <div>• Persistence + staging: in progress</div>
           </div>
           <p className="mt-4 text-sm leading-6 text-slate">
-            This is not a polished SaaS yet. This is a working system we want real teams to break.
+            Hosted collaboration is in paid beta. Local debugging is free and ready to use today.
           </p>
         </div>
       </div>
@@ -643,24 +651,24 @@ function EarlyAccessPage() {
           <div>
             <div className="text-[11px] uppercase tracking-[0.28em] text-sand">Want to try this with your team?</div>
             <div className="mt-3 text-2xl font-medium tracking-[-0.03em]">
-              We’re onboarding a small number of teams manually.
+              We are onboarding a small number of teams manually.
             </div>
           </div>
           <div className="flex flex-col gap-3">
             <a
               href={mailto(
-                "Falkenr early access request",
-                "Hi - I'm interested in early access to Falkenr.",
+                "Falkenr beta access request",
+                "Hi - I am interested in beta access to Falkenr.",
                 INFO_EMAIL
               )}
               className="inline-flex items-center justify-center border border-paper/20 px-6 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:border-paper"
             >
-              Request early access
+              Request beta access
             </a>
             <a
               href={CAL_LINK || mailto(
-                "Falkenr 15-min call",
-                "Hi - I'd like to schedule a 15-minute call about Falkenr.",
+                "Falkenr 15-minute call",
+                "Hi - I would like to schedule a 15-minute call about Falkenr.",
                 INFO_EMAIL
               )}
               className="inline-flex items-center justify-center border border-paper/20 px-6 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:border-paper"
@@ -671,11 +679,15 @@ function EarlyAccessPage() {
         </div>
       </div>
 
-      <form onSubmit={submitLead} className="grid gap-4 border border-ink/15 bg-white/70 p-5 lg:grid-cols-2">
+      <form
+        id="early-access-form"
+        onSubmit={submitLead}
+        className="grid gap-4 border border-ink/15 bg-white/70 p-5 lg:grid-cols-2"
+      >
         <div className="lg:col-span-2">
-          <div className="text-[11px] uppercase tracking-[0.28em] text-slate">Join early access</div>
+          <div className="text-[11px] uppercase tracking-[0.28em] text-slate">Join the beta</div>
           <p className="mt-2 text-sm leading-6 text-slate">
-            Tell us who should evaluate Falkenr and what debugging workflow you want to test first.
+            Tell us who should evaluate Falkenr and which debugging workflow you want to test first.
           </p>
         </div>
         <label className="grid gap-2 text-sm text-slate">
@@ -728,7 +740,7 @@ function EarlyAccessPage() {
             disabled={leadStatus === "sending"}
             className="border border-ink bg-ink px-5 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:bg-pine disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {leadStatus === "sending" ? "Sending" : "Request access"}
+            {leadStatus === "sending" ? "Sending" : "Request beta access"}
           </button>
           {leadStatus === "sent" ? <span className="text-sm text-pine">Request received.</span> : null}
           {leadStatus === "error" ? (
@@ -820,9 +832,8 @@ function PricingPage() {
         <div>
           <div className="text-[11px] uppercase tracking-[0.28em] text-slate">When do you actually pay?</div>
           <p className="mt-4 text-sm leading-7 text-slate">
-            You don’t pay for Falkenr until debugging stops being local. You upgrade when you need to show a teammate what
-            happened, debugging across environments is slowing you down, or logs and screenshots aren’t enough anymore.
-            If you never hit that point, Falkenr stays free.
+            You do not pay for Falkenr until debugging needs to leave one machine. Upgrade when a teammate needs to see
+            the same requests, logs, config, and replay context without waiting for a staging deploy.
           </p>
         </div>
         <div>

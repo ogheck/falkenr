@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/app",
+      "destination": "https://app.falkenr.com/app",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!api/|assets/|logo.png|favicon.ico).*)",
