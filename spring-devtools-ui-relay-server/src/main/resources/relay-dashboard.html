@@ -369,6 +369,7 @@
 <script>
   const initialAccountSession = '__ACCOUNT_SESSION__';
   const ACCOUNT_SESSION_STORAGE_KEY = 'springDevtoolsUi.relay.accountSession';
+  const CHECKOUT_INTENT_STORAGE_KEY = 'springDevtoolsUi.relay.checkoutIntent';
   const sessionForm = document.getElementById('session-form');
   const accountSessionInput = document.getElementById('account-session-input');
   const shareLink = document.getElementById('share-link');
@@ -428,6 +429,46 @@
     }
   }
 
+  function readCheckoutIntentFromUrl() {
+    const params = new URL(window.location.href).searchParams;
+    const intent = params.get('checkout') || params.get('start') || '';
+    return intent.toLowerCase() === 'team' ? 'team' : '';
+  }
+
+  function storeCheckoutIntent(value) {
+    try {
+      if (value) {
+        window.localStorage.setItem(CHECKOUT_INTENT_STORAGE_KEY, value);
+      } else {
+        window.localStorage.removeItem(CHECKOUT_INTENT_STORAGE_KEY);
+      }
+    } catch (error) {
+      // ignore storage failures (private mode, etc)
+    }
+  }
+
+  function readStoredCheckoutIntent() {
+    try {
+      return window.localStorage.getItem(CHECKOUT_INTENT_STORAGE_KEY) || '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function hasPendingTeamCheckout() {
+    return readCheckoutIntentFromUrl() === 'team' || readStoredCheckoutIntent() === 'team';
+  }
+
+  function consumeTeamCheckoutIntent() {
+    const pending = hasPendingTeamCheckout();
+    storeCheckoutIntent('');
+    const url = new URL(window.location.href);
+    url.searchParams.delete('checkout');
+    url.searchParams.delete('start');
+    window.history.replaceState({}, '', url.toString());
+    return pending;
+  }
+
   function setAccountSession(value) {
     const token = String(value || '').trim();
     accountSessionInput.value = token;
@@ -440,6 +481,11 @@
       url.searchParams.delete('accountSession');
     }
     window.history.replaceState({}, '', url.toString());
+  }
+
+  const initialCheckoutIntent = readCheckoutIntentFromUrl();
+  if (initialCheckoutIntent) {
+    storeCheckoutIntent(initialCheckoutIntent);
   }
 
   setAccountSession(initialAccountSession || readStoredAccountSession());
@@ -943,15 +989,44 @@
     }));
   }
 
+  async function startTeamCheckout(accountSession, seatQuantity, feedback) {
+    feedback.innerHTML = '';
+    if (!accountSession) {
+      feedback.innerHTML = '<div class="error">Missing account session. Sign in first, then start Team checkout.</div>';
+      return;
+    }
+    const seats = Math.max(1, Number(seatQuantity || '1'));
+    feedback.innerHTML = '<div class="empty">Creating Stripe Checkout session...</div>';
+    const response = await fetch(buildApiUrl('/sessions/billing/checkout', { accountSession }), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seatQuantity: seats }),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+    }
+    const checkout = await response.json();
+    if (!checkout.checkoutUrl) {
+      throw new Error('Stripe checkout did not return a checkout URL.');
+    }
+    window.location.assign(checkout.checkoutUrl);
+  }
+
   function renderBilling(payload, accountSession) {
     const role = payload.account?.role || '';
     const entitlement = payload.entitlement || {};
     const teamEnabled = entitlement.teamEnabled === true;
     const seatLimit = Number(entitlement.seatLimit || 1);
     const status = entitlement.status || 'inactive';
+    const pendingTeamCheckout = hasPendingTeamCheckout();
 
     if (role.toLowerCase() !== 'owner') {
-      billingPanel.innerHTML = '<div class="empty">Billing is available to organization owners.</div>';
+      const message = pendingTeamCheckout
+        ? 'Billing is available to organization owners. Ask an owner to start Team checkout for this workspace.'
+        : 'Billing is available to organization owners.';
+      consumeTeamCheckoutIntent();
+      billingPanel.innerHTML = `<div class="empty">${message}</div>`;
       return;
     }
 
@@ -975,27 +1050,7 @@
     const feedback = billingPanel.querySelector('#billing-feedback');
     upgrade.addEventListener('click', async () => {
       try {
-        feedback.innerHTML = '';
-        if (!accountSession) {
-          feedback.innerHTML = '<div class="error">Missing account session.</div>';
-          return;
-        }
-        const seats = Math.max(1, Number(seatQuantity.value || '1'));
-        feedback.innerHTML = '<div class="empty">Creating Stripe Checkout session...</div>';
-        const response = await fetch(buildApiUrl('/sessions/billing/checkout', { accountSession }), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ seatQuantity: seats }),
-        });
-        if (!response.ok) {
-          const body = await response.text();
-          throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
-        }
-        const checkout = await response.json();
-        if (!checkout.checkoutUrl) {
-          throw new Error('Stripe checkout did not return a checkout URL.');
-        }
-        window.location.assign(checkout.checkoutUrl);
+        await startTeamCheckout(accountSession, seatQuantity.value || '1', feedback);
       } catch (error) {
         feedback.innerHTML = `<div class="error">${error.message}</div>`;
       }
@@ -1024,6 +1079,19 @@
         feedback.innerHTML = `<div class="error">${error.message}</div>`;
       }
     });
+
+    if (pendingTeamCheckout) {
+      if (teamEnabled) {
+        consumeTeamCheckoutIntent();
+        feedback.innerHTML = '<div class="success">Team is already active for this workspace.</div>';
+      } else {
+        consumeTeamCheckoutIntent();
+        startTeamCheckout(accountSession, seatQuantity.value || '1', feedback)
+          .catch((error) => {
+            feedback.innerHTML = `<div class="error">${error.message}</div>`;
+          });
+      }
+    }
   }
 
   function renderOnboarding(payload) {

@@ -6,6 +6,7 @@ const installSnippet = `dependencies {
 
 const PUBLIC_REPO_URL = "https://github.com/ogheck/falkenr";
 const HOSTED_APP_URL = "https://app.falkenr.com/app";
+const TEAM_CHECKOUT_URL = `${HOSTED_APP_URL}?checkout=team`;
 
 const statusItems = [
   { label: "Local debugging", value: "complete" },
@@ -489,7 +490,7 @@ function EarlyAccessPage() {
         </p>
         <div className="flex flex-wrap gap-3">
           <a
-            href={HOSTED_APP_URL}
+            href={TEAM_CHECKOUT_URL}
             className="inline-flex items-center justify-center border border-ink bg-ink px-5 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:bg-pine"
           >
             Start Team beta
@@ -581,7 +582,7 @@ function EarlyAccessPage() {
           </div>
           <div className="flex flex-col gap-3">
             <a
-              href={HOSTED_APP_URL}
+              href={TEAM_CHECKOUT_URL}
               className="inline-flex items-center justify-center border border-paper/20 px-6 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:border-paper"
             >
               Start Team beta
@@ -643,7 +644,7 @@ function PricingPage() {
             "Multi-developer session view",
             "Stripe Checkout and Team entitlement",
           ]}
-          cta={{ label: "Start Team beta", href: HOSTED_APP_URL }}
+          cta={{ label: "Start Team beta", href: TEAM_CHECKOUT_URL }}
           highlight
         />
       </div>
@@ -680,7 +681,7 @@ function PricingPage() {
               Get started
             </a>
             <a
-              href={HOSTED_APP_URL}
+              href={TEAM_CHECKOUT_URL}
               className="inline-flex items-center justify-center border border-ink/20 px-5 py-3 text-sm uppercase tracking-[0.22em] text-ink transition hover:border-ink"
             >
               Start Team beta
