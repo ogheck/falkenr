@@ -1,4 +1,5 @@
 server:
+  forward-headers-strategy: framework
   error:
     whitelabel:
       enabled: false
@@ -9,4 +10,3 @@ spring:
   web:
     resources:
       add-mappings: false
-
