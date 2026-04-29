@@ -15,6 +15,7 @@ import java.io.IOException;
 class RelayWebLoginSuccessHandler implements AuthenticationSuccessHandler {
 
     static final String ACCOUNT_SESSION_ATTR = "relay.accountSession";
+    static final String CHECKOUT_INTENT_ATTR = "relay.checkoutIntent";
 
     private final InMemoryRelaySessionStore sessionStore;
 
@@ -35,7 +36,12 @@ class RelayWebLoginSuccessHandler implements AuthenticationSuccessHandler {
         String accountSessionToken = sessionStore.bootstrapWebIdentity(identity);
         HttpSession session = request.getSession(true);
         session.setAttribute(ACCOUNT_SESSION_ATTR, accountSessionToken);
+        Object checkoutIntent = session.getAttribute(CHECKOUT_INTENT_ATTR);
+        if ("team".equals(checkoutIntent)) {
+            session.removeAttribute(CHECKOUT_INTENT_ATTR);
+            response.sendRedirect("/app?checkout=team");
+            return;
+        }
         response.sendRedirect("/app");
     }
 }
-

@@ -73,7 +73,13 @@ class HostedViewerController {
 
     @GetMapping(path = "/app", produces = MediaType.TEXT_HTML_VALUE)
     ResponseEntity<String> hostedDashboard(@RequestParam(name = "accountSession", required = false) String accountSession,
+                                           @RequestParam(name = "checkout", required = false) String checkout,
+                                           @RequestParam(name = "start", required = false) String start,
                                            HttpServletRequest request) throws IOException {
+        String checkoutIntent = checkout != null && !checkout.isBlank() ? checkout : start;
+        if ("team".equalsIgnoreCase(checkoutIntent)) {
+            request.getSession(true).setAttribute(RelayWebLoginSuccessHandler.CHECKOUT_INTENT_ATTR, "team");
+        }
         String resolved = accountSession;
         if (resolved == null || resolved.isBlank()) {
             Object sessionToken = request.getSession(false) == null ? null : request.getSession(false).getAttribute(RelayWebLoginSuccessHandler.ACCOUNT_SESSION_ATTR);
