@@ -251,8 +251,9 @@
     </form>
     <div class="stack" style="margin-top: 14px;">
       <details class="card" open>
-        <summary><strong>Sign in</strong> (hosted alpha)</summary>
+        <summary><strong>Sign in</strong></summary>
         <div class="stack" style="margin-top: 12px;">
+          <div class="empty">GitHub is the self-serve sign-in path today. Teammates can also join with an invitation token.</div>
           <div class="inline-actions">
             <a class="button" href="/oauth2/authorization/github">Sign in with GitHub</a>
             <a class="button secondary" href="/logout">Logout</a>
@@ -280,7 +281,7 @@
     <div class="onboarding" id="onboarding-panel">
       <h2>First relay attach</h2>
       <ol>
-        <li>Sign in with GitHub or paste an owner account session.</li>
+        <li>Sign in with GitHub or accept an invitation from an owner.</li>
         <li>Add the Falkenr starter to a local Spring Boot app and open <code>/_dev</code>.</li>
         <li>Set the managed relay URL to <code>https://app.falkenr.com</code>, then attach from the Session tab.</li>
         <li>Return here to invite a teammate, prepare replay artifacts, or upgrade to Team.</li>
@@ -1043,20 +1044,29 @@
   async function load(accountSession) {
     updateShareLink(accountSession);
     if (!accountSession) {
-      dashboardStatus.textContent = 'Loading relay workspace...';
+      dashboardStatus.textContent = 'Sign in to load workspace';
       dashboardEntitlement.textContent = 'Entitlement: n/a';
       dashboardOrg.textContent = 'Organization: n/a';
-      workspaceDetails.innerHTML = '<div class="empty">If you are signed in via GitHub, the dashboard will load automatically. Otherwise paste or create a relay account session token above.</div>';
-      billingPanel.innerHTML = '<div class="empty">Load a workspace to manage billing.</div>';
+      workspaceDetails.innerHTML = '<div class="empty">No relay account session is loaded. Sign in with GitHub, paste a session token, or accept an invitation to load your workspace.</div>';
+      billingPanel.innerHTML = '<div class="empty">Sign in as an organization owner to manage Team billing.</div>';
+      accountsList.innerHTML = '<div class="empty">Sign in to manage organization accounts.</div>';
+      sessionsList.innerHTML = '<div class="empty">Attach a local app after signing in to see hosted sessions.</div>';
+      sessionStats.innerHTML = '';
+      projectsList.innerHTML = '<div class="empty">Sign in to manage projects.</div>';
+      analyticsStats.innerHTML = '';
+      analyticsDetails.innerHTML = '';
+      analyticsActors.innerHTML = '<div class="empty">Sign in to view analytics.</div>';
+      analyticsReplay.innerHTML = '<div class="empty">Sign in to view replay activity.</div>';
       onboardingPanel.innerHTML = `
         <h2>First relay attach</h2>
         <ol>
-          <li>Sign in with GitHub or paste an owner account session.</li>
+          <li>Sign in with GitHub or accept an invitation from an owner.</li>
           <li>Add the Falkenr starter to a local Spring Boot app and open <code>/_dev</code>.</li>
           <li>Set the managed relay URL to <code>https://app.falkenr.com</code>, then attach from the Session tab.</li>
           <li>Return here to invite a teammate, prepare replay artifacts, or upgrade to Team.</li>
         </ol>
       `;
+      return;
     }
 
     try {
@@ -1108,8 +1118,14 @@
       renderSimpleList(analyticsReplay, Array.isArray(analytics.recentReplayTitles) ? analytics.recentReplayTitles : [], 'No replay titles are available yet.');
     } catch (error) {
       dashboardStatus.textContent = 'Failed to load relay workspace';
-      workspaceDetails.innerHTML = `<div class="error">${error.message}</div>`;
-      billingPanel.innerHTML = '<div class="error">Could not load billing controls.</div>';
+      const authMessage = String(error.message || '').includes('401')
+        || String(error.message || '').toLowerCase().includes('account session');
+      workspaceDetails.innerHTML = authMessage
+        ? '<div class="error">Your relay account session is missing or expired. Sign in again to load this workspace.</div>'
+        : `<div class="error">${error.message}</div>`;
+      billingPanel.innerHTML = authMessage
+        ? '<div class="empty">Sign in as an organization owner to manage Team billing.</div>'
+        : '<div class="error">Could not load billing controls.</div>';
       accountsList.innerHTML = '<div class="error">Could not load organization accounts.</div>';
       sessionsList.innerHTML = '<div class="error">Could not load hosted sessions.</div>';
       sessionStats.innerHTML = '';

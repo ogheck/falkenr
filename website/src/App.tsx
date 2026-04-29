@@ -6,7 +6,6 @@ const installSnippet = `dependencies {
 
 const PUBLIC_REPO_URL = "https://github.com/ogheck/falkenr";
 const HOSTED_APP_URL = "https://app.falkenr.com/app";
-const INFO_EMAIL = "info@falkenr.com";
 
 const statusItems = [
   { label: "Local debugging", value: "complete" },
@@ -41,17 +40,6 @@ const FEATURES = {
     "Multi-user session view",
   ],
 };
-
-const CAL_LINK = (import.meta as any).env?.VITE_BOOK_CALL_URL as string | undefined;
-const EARLY_ACCESS_ENDPOINT = ((import.meta as any).env?.VITE_EARLY_ACCESS_ENDPOINT
-  || ((import.meta as any).env?.PROD ? "/api/early-access" : undefined)) as string | undefined;
-const EARLY_ACCESS_EMAIL = INFO_EMAIL;
-
-function mailto(subject: string, body?: string, email = EARLY_ACCESS_EMAIL) {
-  const encoded = encodeURIComponent(subject);
-  const encodedBody = body ? `&body=${encodeURIComponent(body)}` : "";
-  return `mailto:${email}?subject=${encoded}${encodedBody}`;
-}
 
 function usePathname() {
   const [pathname, setPathname] = React.useState(() => window.location.pathname || "/");
@@ -102,7 +90,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           <div className="flex flex-wrap items-center gap-4">
             <NavLink href="/">Home</NavLink>
             <NavLink href="/quickstart">Quickstart</NavLink>
-            <NavLink href="/early-access">Early access</NavLink>
+            <NavLink href="/early-access">Start</NavLink>
             <NavLink href="/pricing">Pricing</NavLink>
             <a
               href={HOSTED_APP_URL}
@@ -196,13 +184,13 @@ function HomePage() {
           </div>
           <figure className="border border-ink/15 bg-white/70 p-3 shadow-plate">
             <img
-              src="/demo/falkenr-demo.gif"
-              alt="Short Falkenr demo showing install, local dashboard inspection, session sharing, and collaboration"
+              src="/screenshots/dashboard-live.png"
+              alt="Falkenr runtime dashboard showing Spring Boot endpoints, requests, logs, and config"
               className="aspect-[3/2] w-full object-cover"
               loading="lazy"
             />
             <figcaption className="mt-3 text-xs uppercase tracking-[0.22em] text-slate/80">
-              Short workflow demo
+              Runtime dashboard preview
             </figcaption>
           </figure>
         </div>
@@ -484,60 +472,6 @@ function QuickstartPage() {
 }
 
 function EarlyAccessPage() {
-  const [leadForm, setLeadForm] = React.useState({
-    name: "",
-    email: "",
-    company: "",
-    teamSize: "",
-    pain: "",
-  });
-  const [leadStatus, setLeadStatus] = React.useState<"idle" | "sending" | "sent" | "error">("idle");
-
-  function updateLeadField(field: keyof typeof leadForm, value: string) {
-    setLeadForm((current) => ({ ...current, [field]: value }));
-  }
-
-  async function submitLead(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!EARLY_ACCESS_ENDPOINT) {
-      window.location.href = mailto(
-        "Falkenr early access request",
-        [
-          `Name: ${leadForm.name}`,
-          `Email: ${leadForm.email}`,
-          `Company: ${leadForm.company}`,
-          `Team size: ${leadForm.teamSize}`,
-          `Debugging pain: ${leadForm.pain}`,
-        ].join("\n"),
-        INFO_EMAIL
-      );
-      return;
-    }
-
-    setLeadStatus("sending");
-    try {
-      const response = await fetch(EARLY_ACCESS_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...leadForm,
-          source: "website-early-access",
-          capturedAt: new Date().toISOString(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Lead capture failed with ${response.status}`);
-      }
-
-      setLeadStatus("sent");
-      setLeadForm({ name: "", email: "", company: "", teamSize: "", pain: "" });
-    } catch {
-      setLeadStatus("error");
-    }
-  }
-
   return (
     <section className="space-y-10">
       <div className="space-y-5">
@@ -547,33 +481,24 @@ function EarlyAccessPage() {
           paid beta
         </div>
         <h1 className="font-display text-[clamp(2.6rem,7vw,5rem)] leading-[0.95] tracking-[-0.05em] text-ink">
-          Stop sending repro steps. Share your debugging session instead.
+          Start free locally. Upgrade when debugging needs to leave your machine.
         </h1>
         <p className="max-w-2xl text-base leading-7 text-slate sm:text-lg">
-          Falkenr lets you share a live Spring Boot debugging session with your team, including requests, logs, config,
-          and replay context. We are onboarding a small number of teams for paid beta.
+          Falkenr is free for solo local debugging from GitHub. The paid Team beta unlocks hosted collaboration:
+          shareable debugging sessions, remote relay access, and a hosted viewer for teammates.
         </p>
         <div className="flex flex-wrap gap-3">
           <a
-            href={mailto(
-              "Falkenr beta access request",
-              "Hi - I am interested in beta access to Falkenr.",
-              INFO_EMAIL
-            )}
+            href={HOSTED_APP_URL}
             className="inline-flex items-center justify-center border border-ink bg-ink px-5 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:bg-pine"
           >
-            Request beta access
+            Start Team beta
           </a>
-
           <a
-            href={mailto(
-              "Falkenr 15-minute call",
-              "Hi - I would like to schedule a 15-minute call about Falkenr.",
-              INFO_EMAIL
-            )}
+            href={PUBLIC_REPO_URL}
             className="inline-flex items-center justify-center border border-ink/20 px-5 py-3 text-sm uppercase tracking-[0.22em] text-ink transition hover:border-ink"
           >
-            Book a 15-min call
+            Open free starter
           </a>
         </div>
       </div>
@@ -649,105 +574,27 @@ function EarlyAccessPage() {
       <div className="border border-ink bg-ink p-6 text-paper">
         <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
-            <div className="text-[11px] uppercase tracking-[0.28em] text-sand">Want to try this with your team?</div>
+            <div className="text-[11px] uppercase tracking-[0.28em] text-sand">Self-serve beta</div>
             <div className="mt-3 text-2xl font-medium tracking-[-0.03em]">
-              We are onboarding a small number of teams manually.
+              Use the free local package today. Pay only when your team needs hosted sharing.
             </div>
           </div>
           <div className="flex flex-col gap-3">
             <a
-              href={mailto(
-                "Falkenr beta access request",
-                "Hi - I am interested in beta access to Falkenr.",
-                INFO_EMAIL
-              )}
+              href={HOSTED_APP_URL}
               className="inline-flex items-center justify-center border border-paper/20 px-6 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:border-paper"
             >
-              Request beta access
+              Start Team beta
             </a>
             <a
-              href={CAL_LINK || mailto(
-                "Falkenr 15-minute call",
-                "Hi - I would like to schedule a 15-minute call about Falkenr.",
-                INFO_EMAIL
-              )}
+              href={PUBLIC_REPO_URL}
               className="inline-flex items-center justify-center border border-paper/20 px-6 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:border-paper"
             >
-              Book a 15-min call
+              Open GitHub
             </a>
           </div>
         </div>
       </div>
-
-      <form
-        id="early-access-form"
-        onSubmit={submitLead}
-        className="grid gap-4 border border-ink/15 bg-white/70 p-5 lg:grid-cols-2"
-      >
-        <div className="lg:col-span-2">
-          <div className="text-[11px] uppercase tracking-[0.28em] text-slate">Join the beta</div>
-          <p className="mt-2 text-sm leading-6 text-slate">
-            Tell us who should evaluate Falkenr and which debugging workflow you want to test first.
-          </p>
-        </div>
-        <label className="grid gap-2 text-sm text-slate">
-          Name
-          <input
-            required
-            value={leadForm.name}
-            onChange={(event) => updateLeadField("name", event.target.value)}
-            className="border border-ink/20 bg-paper px-4 py-3 text-ink outline-none focus:border-ink"
-          />
-        </label>
-        <label className="grid gap-2 text-sm text-slate">
-          Work email
-          <input
-            required
-            type="email"
-            value={leadForm.email}
-            onChange={(event) => updateLeadField("email", event.target.value)}
-            className="border border-ink/20 bg-paper px-4 py-3 text-ink outline-none focus:border-ink"
-          />
-        </label>
-        <label className="grid gap-2 text-sm text-slate">
-          Company
-          <input
-            value={leadForm.company}
-            onChange={(event) => updateLeadField("company", event.target.value)}
-            className="border border-ink/20 bg-paper px-4 py-3 text-ink outline-none focus:border-ink"
-          />
-        </label>
-        <label className="grid gap-2 text-sm text-slate">
-          Team size
-          <input
-            value={leadForm.teamSize}
-            onChange={(event) => updateLeadField("teamSize", event.target.value)}
-            className="border border-ink/20 bg-paper px-4 py-3 text-ink outline-none focus:border-ink"
-          />
-        </label>
-        <label className="grid gap-2 text-sm text-slate lg:col-span-2">
-          Debugging workflow to test
-          <textarea
-            rows={4}
-            value={leadForm.pain}
-            onChange={(event) => updateLeadField("pain", event.target.value)}
-            className="resize-y border border-ink/20 bg-paper px-4 py-3 text-ink outline-none focus:border-ink"
-          />
-        </label>
-        <div className="flex flex-wrap items-center gap-3 lg:col-span-2">
-          <button
-            type="submit"
-            disabled={leadStatus === "sending"}
-            className="border border-ink bg-ink px-5 py-3 text-sm uppercase tracking-[0.22em] text-paper transition hover:bg-pine disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {leadStatus === "sending" ? "Sending" : "Request beta access"}
-          </button>
-          {leadStatus === "sent" ? <span className="text-sm text-pine">Request received.</span> : null}
-          {leadStatus === "error" ? (
-            <span className="text-sm text-ember">Could not submit. Email fallback is still available.</span>
-          ) : null}
-        </div>
-      </form>
     </section>
   );
 }
@@ -765,11 +612,12 @@ function PricingPage() {
           Pricing for real debugging, not dashboards.
         </h1>
         <p className="max-w-2xl text-base leading-7 text-slate sm:text-lg">
-          Start free locally. Upgrade to Team when your team needs hosted collaboration and shared debugging sessions.
+          Free is the open local package. Team is the paid hosted collaboration product. No account is required until
+          you want hosted relay access for a team.
         </p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-4">
+      <div className="grid gap-5 lg:grid-cols-2">
         <PricingCard
           name="Free"
           price="$0"
@@ -781,7 +629,7 @@ function PricingPage() {
             "Runs entirely in your app",
             "No database required",
           ]}
-          cta={{ label: "Get started", href: PUBLIC_REPO_URL }}
+          cta={{ label: "Open GitHub", href: PUBLIC_REPO_URL }}
         />
         <PricingCard
           name="Team"
@@ -798,34 +646,14 @@ function PricingPage() {
           cta={{ label: "Start Team beta", href: HOSTED_APP_URL }}
           highlight
         />
-        <PricingCard
-          name="Pro"
-          price="$79 / app / month"
-          tag="For staging and QA workflows"
-          bullets={[
-            "Everything in Team",
-            "Persistent request history",
-            "Environment comparison",
-            "Config diff",
-            "API testing tools",
-            "Mock responses",
-          ]}
-          cta={{ label: "Join waitlist", href: mailto("Falkenr Pro waitlist") }}
-        />
-        <PricingCard
-          name="Enterprise"
-          price="Custom"
-          tag="For large teams and production-safe usage"
-          bullets={[
-            "SSO",
-            "RBAC and access control",
-            "Audit logs",
-            "Data masking policies",
-            "Production-safe sampling",
-            "Governance controls",
-          ]}
-          cta={{ label: "Contact us", href: mailto("Falkenr enterprise inquiry") }}
-        />
+      </div>
+
+      <div className="border border-ink/15 bg-white/60 p-5">
+        <div className="text-[11px] uppercase tracking-[0.28em] text-slate">Future roadmap</div>
+        <p className="mt-4 text-sm leading-7 text-slate">
+          Persistent request history, environment comparison, SSO, RBAC, audit logs, and production-safe controls stay
+          on the roadmap. They are not part of the public offer until the Team beta is proven and stable.
+        </p>
       </div>
 
       <div className="grid gap-6 border border-ink/15 bg-fog/90 p-6 lg:grid-cols-2">
